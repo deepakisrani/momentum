@@ -20,9 +20,17 @@ export interface SuggestionInput {
   goal: Goal
   mechanic: Mechanic | null
   isDeload: boolean
-  /** Overrides the mechanic-derived default increment. */
+  /**
+   * Overrides the mechanic-derived default increment.
+   * Omit (or `undefined`) to use the default; `0` is honored as-is (no weight increase).
+   */
   increment?: number
 }
+
+/** Deload working weight is reduced to this fraction. */
+const DELOAD_WEIGHT_FACTOR = 0.9
+/** Suggested weights round to this step. Metric (kg) only — revisit for imperial in the UI layer. */
+const WEIGHT_ROUNDING_STEP_KG = 0.5
 
 const RIR_GATE: Record<Goal, number> = { bulk: 1, maintain: 2, cut: 3 }
 
@@ -35,6 +43,7 @@ function roundTo(value: number, step: number): number {
 }
 
 function topSet(sets: SetResult[]): SetResult {
+  // Tie-break by reps: at equal weight, the set with more reps is the progression anchor.
   return sets.reduce((best, s) =>
     s.weight > best.weight || (s.weight === best.weight && s.reps > best.reps) ? s : best,
   )
@@ -48,7 +57,7 @@ export function suggestNextSetOne(input: SuggestionInput): Suggestion | null {
   const top = topSet(lastSession)
 
   if (isDeload) {
-    return { weight: roundTo(top.weight * 0.9, 0.5), repTarget: repRange.min, reason: 'deload' }
+    return { weight: roundTo(top.weight * DELOAD_WEIGHT_FACTOR, WEIGHT_ROUNDING_STEP_KG), repTarget: repRange.min, reason: 'deload' }
   }
 
   const hitTop = top.reps >= repRange.max

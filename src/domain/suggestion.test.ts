@@ -106,4 +106,12 @@ describe('suggestNextSetOne', () => {
     const r = suggestNextSetOne({ ...base, isDeload: true, lastSession: sets({ weight: 62.5, reps: 12, rir: null }) })
     expect(r).toEqual({ weight: 56.5, repTarget: 8, reason: 'deload' })
   })
+
+  it('rebuild uses the heaviest set even if a lighter set is in range', () => {
+    const r = suggestNextSetOne({ ...base, lastSession: sets(
+      { weight: 60, reps: 6, rir: 0 },
+      { weight: 50, reps: 10, rir: 2 },
+    ) })
+    expect(r).toEqual({ weight: 60, repTarget: 8, reason: 'rebuild' })
+  })
 })
