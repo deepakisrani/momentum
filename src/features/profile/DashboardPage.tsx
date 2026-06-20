@@ -86,6 +86,10 @@ export function DashboardPage() {
           </div>
         </div>
 
+        <Link to="/workout" className="block w-full rounded-xl bg-brand-700 px-4 py-4 text-center text-lg font-bold text-white hover:bg-brand-800">
+          {t('nav.workout')}
+        </Link>
+
         <div className="grid grid-cols-3 gap-3">
           {stat(t('dashboard.bmr'), String(summary.bmr))}
           {stat(t('dashboard.maintenance'), String(Math.round(summary.tdee)))}
