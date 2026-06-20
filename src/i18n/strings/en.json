@@ -26,5 +26,15 @@
   "activity.extra_active": "Extra active",
   "onboarding.submit": "Finish setup",
   "common.saving": "Saving…",
-  "common.error": "Something went wrong — please try again."
+  "common.error": "Something went wrong — please try again.",
+  "common.save": "Save",
+  "dashboard.title": "Today",
+  "dashboard.bmr": "BMR",
+  "dashboard.maintenance": "Maintenance",
+  "dashboard.target": "Target",
+  "dashboard.currentWeight": "Current weight",
+  "dashboard.currentGoal": "Goal",
+  "dashboard.logWeight": "Log weight",
+  "dashboard.changeGoal": "Change goal",
+  "dashboard.kcal": "kcal"
 }
