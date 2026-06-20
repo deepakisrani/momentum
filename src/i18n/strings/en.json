@@ -3,5 +3,8 @@
   "auth.signInWithGoogle": "Continue with Google",
   "auth.notInvited": "This app is invite-only. Ask the owner for access.",
   "auth.signOut": "Sign out",
-  "home.welcome": "Welcome to Momentum"
+  "home.welcome": "Welcome to Momentum",
+  "theme.toggle": "Toggle light or dark theme",
+  "theme.light": "Light",
+  "theme.dark": "Dark"
 }
