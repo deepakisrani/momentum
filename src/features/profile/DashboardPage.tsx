@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
 import { ThemeToggle } from '../../theme/ThemeToggle'
+import { Wordmark } from '../../components/Wordmark'
 import { useProfileData } from './useProfileData'
 import { buildEnergySummary } from './energySummary'
 import { addWeight } from '../../data/weightRepo'
@@ -76,7 +77,7 @@ export function DashboardPage() {
     <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
       <div className="mx-auto max-w-md space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{t('dashboard.title')}</h1>
+          <Wordmark className="h-7" />
           <ThemeToggle />
         </div>
 
@@ -95,7 +96,7 @@ export function DashboardPage() {
               type="number" inputMode="decimal" step="0.1" placeholder="kg"
               value={weightInput} onChange={(e) => setWeightInput(e.target.value)}
             />
-            <button onClick={logWeight} disabled={busy} className="rounded-lg bg-indigo-600 px-4 font-semibold text-white disabled:opacity-60">
+            <button onClick={logWeight} disabled={busy} className="rounded-lg bg-brand-700 hover:bg-brand-800 px-4 font-semibold text-white disabled:opacity-60">
               {t('dashboard.logWeight')}
             </button>
           </div>
@@ -109,7 +110,7 @@ export function DashboardPage() {
                 key={g}
                 onClick={() => changeGoal(g)}
                 disabled={busy || g === latestGoal.goal}
-                className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold ${g === latestGoal.goal ? 'bg-indigo-600 text-white' : 'bg-white text-slate-900 dark:bg-[#0f1115] dark:text-white'}`}
+                className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold ${g === latestGoal.goal ? 'bg-brand-600 text-white' : 'bg-white text-slate-900 dark:bg-[#0f1115] dark:text-white'}`}
               >
                 {t(`goal.${g}`)}
               </button>

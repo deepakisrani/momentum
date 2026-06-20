@@ -10,7 +10,7 @@ export default defineConfig({
       manifest: {
         name: 'Momentum',
         short_name: 'Momentum',
-        theme_color: '#4f46e5',
+        theme_color: '#0c6aa6',
         background_color: '#0f1115',
         display: 'standalone',
         icons: [

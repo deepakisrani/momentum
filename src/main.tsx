@@ -5,6 +5,10 @@ import { I18nProvider } from './i18n/I18nProvider'
 import { ThemeProvider } from './theme/ThemeProvider'
 import { AuthProvider } from './auth/AuthProvider'
 import App from './App'
+import '@fontsource/inter-tight/400.css'
+import '@fontsource/inter-tight/500.css'
+import '@fontsource/inter-tight/600.css'
+import '@fontsource/inter-tight/700.css'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

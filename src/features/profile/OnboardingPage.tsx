@@ -9,6 +9,7 @@ import { addGoal } from '../../data/goalRepo'
 import { ACTIVITY_FACTORS, type ActivityLevel } from '../../domain/energy'
 import type { Sex, Goal } from '../../domain/types'
 import { todayIso } from './today'
+import { Wordmark } from '../../components/Wordmark'
 
 const ACTIVITY_LEVELS = Object.keys(ACTIVITY_FACTORS) as ActivityLevel[]
 const GOALS: Goal[] = ['cut', 'maintain', 'bulk']
@@ -61,6 +62,7 @@ export function OnboardingPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
       <form onSubmit={onSubmit} className="w-full max-w-sm space-y-4">
+        <Wordmark className="mx-auto mb-2 h-9" />
         <h1 className="text-2xl font-bold">{t('onboarding.title')}</h1>
 
         <label className="block text-sm">{t('onboarding.sex')}
@@ -95,7 +97,7 @@ export function OnboardingPage() {
         </label>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
-        <button type="submit" disabled={saving} className="w-full rounded-lg bg-indigo-600 px-5 py-3 font-semibold text-white disabled:opacity-60">
+        <button type="submit" disabled={saving} className="w-full rounded-lg bg-brand-700 hover:bg-brand-800 px-5 py-3 font-semibold text-white disabled:opacity-60">
           {saving ? t('common.saving') : t('onboarding.submit')}
         </button>
       </form>
