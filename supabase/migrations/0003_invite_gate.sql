@@ -31,5 +31,5 @@ create trigger on_auth_user_created
   for each row execute function handle_new_user();
 
 -- Seed the first invited user (replace with the real owner email)
-insert into allowed_emails (email) values ('deepak@greatlearning.in')
+insert into allowed_emails (email) values ('d3epak91@gmail.com')
   on conflict (email) do nothing;
