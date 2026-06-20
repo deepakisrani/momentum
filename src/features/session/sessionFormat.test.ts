@@ -28,6 +28,9 @@ describe('exerciseStatus', () => {
     expect(exerciseStatus(3, 3)).toBe('done')
     expect(exerciseStatus(3, 4)).toBe('done')
   })
+  it('treats a zero target as done', () => {
+    expect(exerciseStatus(0, 0)).toBe('done')
+  })
 })
 
 describe('buildSuggestionInput', () => {

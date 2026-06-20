@@ -35,7 +35,7 @@ export async function startSession(
       .from('meso_day_exercise').select('exercise_id, order_index').eq('meso_day_id', opts.mesoDayId).order('order_index', { ascending: true })
     if (pe) throw pe
     if (planned && planned.length) {
-      const rows = planned.map((p, i) => ({ session_id: sessionId, exercise_id: p.exercise_id, source: 'planned' as const, order_index: i }))
+      const rows = planned.map((p) => ({ session_id: sessionId, exercise_id: p.exercise_id, source: 'planned' as const, order_index: p.order_index }))
       const { error: se } = await supabase.from('session_exercise').insert(rows)
       if (se) throw se
     }
@@ -65,14 +65,14 @@ export async function getSessionFull(sessionId: string): Promise<SessionFull> {
   }
   return {
     session: session as WorkoutSessionRow,
-    exercises: (ses as SessionExerciseRow[]).map((se) => ({
+    exercises: ((ses ?? []) as SessionExerciseRow[]).map((se) => ({
       ...se,
       sets: sets.filter((s) => s.session_exercise_id === se.id).map((s) => ({ ...s, segments: segments.filter((g) => g.logged_set_id === s.id) })),
     })),
   }
 }
 
-/** Adds a single-segment set (v1 has no drop-sets). Returns the new logged_set id. */
+/** Adds a single-segment set (v1 has no drop-sets). */
 export async function addSet(sessionExerciseId: string, setIndex: number, seg: { weight: number; reps: number; rir: number | null }): Promise<void> {
   const { data, error } = await supabase
     .from('logged_set').insert({ session_exercise_id: sessionExerciseId, set_index: setIndex, is_drop_set: false }).select('id').single()
@@ -110,17 +110,18 @@ export async function endSession(sessionId: string): Promise<void> {
 
 /** Most recent prior COMPLETED session's sets for an exercise (first segment of each set), for "last time" + suggestions. */
 export async function getLastPerformance(userId: string, exerciseId: string, excludeSessionId: string): Promise<SetResult[] | null> {
-  const { data: prior, error } = await supabase
-    .from('session_exercise')
-    .select('id, workout_session!inner(id, user_id, status, started_at)')
-    .eq('exercise_id', exerciseId)
-    .eq('workout_session.user_id', userId)
-    .eq('workout_session.status', 'completed')
-    .neq('workout_session.id', excludeSessionId)
-    .order('started_at', { ascending: false, foreignTable: 'workout_session' })
+  const { data: ws, error } = await supabase
+    .from('workout_session')
+    .select('id, session_exercise!inner(id, exercise_id)')
+    .eq('user_id', userId)
+    .eq('status', 'completed')
+    .neq('id', excludeSessionId)
+    .eq('session_exercise.exercise_id', exerciseId)
+    .order('started_at', { ascending: false })
     .limit(1)
+    .maybeSingle()
   if (error) throw error
-  const se = prior?.[0]
+  const se = (ws?.session_exercise as { id: string; exercise_id: string }[] | undefined)?.[0]
   if (!se) return null
   const { data: ls, error: e2 } = await supabase
     .from('logged_set').select('id').eq('session_exercise_id', se.id).order('set_index', { ascending: true })

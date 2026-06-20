@@ -13,7 +13,8 @@ export function formatLastTime(sets: SetResult[] | null): string | null {
 }
 
 export function exerciseStatus(targetSets: number, completedSets: number): ExerciseStatus {
-  if (completedSets <= 0) return 'not_started'
+  if (targetSets <= 0) return 'done'
+  if (completedSets === 0) return 'not_started'
   if (completedSets >= targetSets) return 'done'
   return 'in_progress'
 }
