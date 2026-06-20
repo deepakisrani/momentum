@@ -1,4 +1,4 @@
-import type { Sex, Goal, Units } from '../domain/types'
+import type { Sex, Goal, Units, Mechanic } from '../domain/types'
 
 export interface ProfileRow {
   id: string
@@ -23,4 +23,14 @@ export interface GoalLogRow {
   user_id: string
   effective_from: string // 'YYYY-MM-DD'
   goal: Goal
+}
+
+export interface ExerciseRow {
+  id: string
+  owner_user_id: string | null
+  name: string
+  muscle_group: string
+  equipment: string | null
+  mechanic: Mechanic | null
+  is_public: boolean
 }
