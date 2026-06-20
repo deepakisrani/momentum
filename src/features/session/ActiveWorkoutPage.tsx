@@ -69,16 +69,25 @@ export function ActiveWorkoutPage() {
   async function toggleDeload() {
     if (!full || !sessionId) return
     const next = !full.session.is_deload
-    await setSessionDeload(sessionId, next)
-    setFull({ ...full, session: { ...full.session, is_deload: next } })
+    try {
+      await setSessionDeload(sessionId, next)
+      setFull({ ...full, session: { ...full.session, is_deload: next } })
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[Workout] toggleDeload failed:', err)
+    }
   }
 
   async function addExercise(ex: ExerciseRow) {
     if (!sessionId || !full) return
     setExMap((m) => ({ ...m, [ex.id]: ex }))
-    await addSessionExercise(sessionId, ex.id, full.exercises.length, 'added')
-    await loadSession(sessionId)
-    setPickerOpen(false)
+    try {
+      await addSessionExercise(sessionId, ex.id, full.exercises.length, 'added')
+      await loadSession(sessionId)
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[Workout] addExercise failed:', err)
+    } finally {
+      setPickerOpen(false)
+    }
   }
 
   if (loading) return <div className="min-h-screen bg-white p-6 dark:bg-[#0f1115] dark:text-white">{t('common.loading')}</div>

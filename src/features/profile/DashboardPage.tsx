@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
@@ -9,6 +9,7 @@ import { buildEnergySummary } from './energySummary'
 import { addWeight } from '../../data/weightRepo'
 import { addGoal } from '../../data/goalRepo'
 import { todayIso } from './today'
+import { getActiveSession } from '../../data/sessionRepo'
 import type { Goal } from '../../domain/types'
 
 const GOALS: Goal[] = ['cut', 'maintain', 'bulk']
@@ -20,6 +21,11 @@ export function DashboardPage() {
   const [weightInput, setWeightInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [logError, setLogError] = useState<string | null>(null)
+  const [hasActiveSession, setHasActiveSession] = useState(false)
+  useEffect(() => {
+    if (!session) return
+    getActiveSession(session.user.id).then((s) => setHasActiveSession(!!s)).catch(() => {})
+  }, [session])
 
   // The RequireOnboarding guard guarantees these are present; this satisfies the type-checker.
   if (!session || !profile || !latestWeight || !latestGoal || !profile.sex || !profile.date_of_birth || profile.height_cm == null) {
@@ -87,7 +93,7 @@ export function DashboardPage() {
         </div>
 
         <Link to="/workout" className="block w-full rounded-xl bg-brand-700 px-4 py-4 text-center text-lg font-bold text-white hover:bg-brand-800">
-          {t('nav.workout')}
+          {hasActiveSession ? t('workout.resume') : t('workout.start')}
         </Link>
 
         <div className="grid grid-cols-3 gap-3">

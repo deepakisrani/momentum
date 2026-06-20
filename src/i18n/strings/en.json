@@ -106,6 +106,7 @@
   "workout.reps": "Reps",
   "workout.rir": "RIR",
   "workout.addSet": "Add set",
+  "workout.deleteSet": "Delete set",
   "workout.suggestion.add_weight": "Add weight — you had reps to spare",
   "workout.suggestion.add_rep": "Add a rep",
   "workout.suggestion.hold_no_reserve": "Hold — no reps in reserve",

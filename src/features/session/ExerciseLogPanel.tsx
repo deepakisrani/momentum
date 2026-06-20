@@ -82,7 +82,7 @@ export function ExerciseLogPanel({
               <input className={numField} defaultValue={seg?.weight} onBlur={(e: React.FocusEvent<HTMLInputElement>) => seg && updateSegment(seg.id, { weight: Number(e.target.value), reps: seg.reps, rir: seg.rir }).then(onChanged)} />
               <input className={numField} defaultValue={seg?.reps} onBlur={(e: React.FocusEvent<HTMLInputElement>) => seg && updateSegment(seg.id, { weight: seg.weight, reps: Number(e.target.value), rir: seg.rir }).then(onChanged)} />
               <input className={numField} defaultValue={seg?.rir ?? ''} placeholder={t('workout.rir')} onBlur={(e: React.FocusEvent<HTMLInputElement>) => seg && updateSegment(seg.id, { weight: seg.weight, reps: seg.reps, rir: e.target.value === '' ? null : Number(e.target.value) }).then(onChanged)} />
-              <button onClick={() => deleteSet(s.id).then(onChanged)} aria-label={t('mesos.delete')} className="text-slate-400">🗑</button>
+              <button onClick={() => deleteSet(s.id).then(onChanged)} aria-label={t('workout.deleteSet')} className="text-slate-400">🗑</button>
             </li>
           )
         })}
