@@ -6,6 +6,7 @@ import { ProfileDataProvider } from './features/profile/ProfileDataProvider'
 import { RequireOnboarding } from './features/profile/RequireOnboarding'
 import { OnboardingPage } from './features/profile/OnboardingPage'
 import { DashboardPage } from './features/profile/DashboardPage'
+import { ExerciseLibraryPage } from './features/exercises/ExerciseLibraryPage'
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
               <Routes>
                 <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/" element={<RequireOnboarding><DashboardPage /></RequireOnboarding>} />
+                <Route path="/exercises" element={<RequireOnboarding><ExerciseLibraryPage /></RequireOnboarding>} />
               </Routes>
             </ProfileDataProvider>
           </RequireAuth>

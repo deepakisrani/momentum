@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
 import { ThemeToggle } from '../../theme/ThemeToggle'
@@ -78,7 +79,10 @@ export function DashboardPage() {
       <div className="mx-auto max-w-md space-y-6">
         <div className="flex items-center justify-between">
           <Wordmark className="h-7" />
-          <ThemeToggle />
+          <div className="flex items-center gap-3">
+            <Link to="/exercises" className="text-sm font-medium text-brand-700 dark:text-brand-400">{t('nav.exercises')}</Link>
+            <ThemeToggle />
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
