@@ -41,7 +41,7 @@ export function ExerciseLibraryPage() {
     setShowAdd(false)
   }
 
-  const control = 'rounded-lg bg-white px-3 py-2 text-slate-900 dark:bg-[#1b2030] dark:text-white'
+  const control = 'rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-[#1b2030] dark:text-white'
 
   return (
     <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
@@ -49,7 +49,7 @@ export function ExerciseLibraryPage() {
         <div className="flex items-center justify-between">
           <Link to="/" className="text-sm text-slate-500 dark:text-slate-400">{t('nav.back')}</Link>
           <h1 className="text-xl font-bold">{t('exercises.title')}</h1>
-          <button onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brand-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-800">
+          <button onClick={() => setShowAdd((s) => !s)} disabled={loading} className="rounded-lg bg-brand-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-800 disabled:opacity-60">
             {t('exercises.addCustom')}
           </button>
         </div>
@@ -84,7 +84,7 @@ export function ExerciseLibraryPage() {
 
         {error && <p className="text-sm text-red-500">{error}</p>}
         {loading ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">…</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{t('common.loading')}</p>
         ) : (
           <>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -96,7 +96,7 @@ export function ExerciseLibraryPage() {
                 <li key={e.id} className="rounded-lg bg-slate-100 p-3 dark:bg-[#1b2030]">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">{e.name}</span>
-                    {e.owner_user_id && <span className="rounded bg-brand-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">{t('exercises.custom')}</span>}
+                    {e.owner_user_id === userId && <span className="rounded bg-brand-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">{t('exercises.custom')}</span>}
                   </div>
                   <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                     {e.muscle_group}{e.equipment ? ` · ${e.equipment}` : ''}{e.mechanic ? ` · ${t(`exercises.mechanic.${e.mechanic}`)}` : ''}
@@ -128,7 +128,7 @@ function AddExerciseForm({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const control = 'w-full rounded-lg bg-white px-3 py-2 text-slate-900 dark:bg-[#0f1115] dark:text-white'
+  const control = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-[#0f1115] dark:text-white'
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()

@@ -56,5 +56,6 @@
   "exercises.empty": "No exercises match.",
   "exercises.countShown": "{shown} of {total}",
   "nav.exercises": "Exercises",
-  "nav.back": "← Back"
+  "nav.back": "← Back",
+  "common.loading": "Loading…"
 }
