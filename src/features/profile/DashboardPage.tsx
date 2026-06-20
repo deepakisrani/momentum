@@ -80,6 +80,7 @@ export function DashboardPage() {
         <div className="flex items-center justify-between">
           <Wordmark className="h-7" />
           <div className="flex items-center gap-3">
+            <Link to="/mesos" className="text-sm font-medium text-brand-700 dark:text-brand-400">{t('nav.mesos')}</Link>
             <Link to="/exercises" className="text-sm font-medium text-brand-700 dark:text-brand-400">{t('nav.exercises')}</Link>
             <ThemeToggle />
           </div>
