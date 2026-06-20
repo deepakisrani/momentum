@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
-import { listMesos, setActiveMeso, deleteMeso, getMesoFull } from '../../data/mesoRepo'
-import { saveMeso } from '../../data/mesoRepo'
+import { listMesos, setActiveMeso, deleteMeso, getMesoFull, saveMeso } from '../../data/mesoRepo'
 import { draftFromFull, stripIds } from './mesoDraft'
 import type { MesoRow } from '../../data/rows'
 
@@ -36,7 +35,7 @@ export function MesoListPage() {
 
   async function activate(id: string) {
     setBusy(true)
-    try { await setActiveMeso(userId, id); await reload() } finally { setBusy(false) }
+    try { await setActiveMeso(userId, id); await reload() } catch { setError(t('common.error')) } finally { setBusy(false) }
   }
 
   async function remove(id: string) {
@@ -53,7 +52,7 @@ export function MesoListPage() {
       draft.name = full.meso.name + t('mesos.copySuffix')
       const newId = await saveMeso(userId, draft)
       navigate(`/mesos/${newId}/edit`)
-    } finally { setBusy(false) }
+    } catch { setError(t('common.error')) } finally { setBusy(false) }
   }
 
   return (

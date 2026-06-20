@@ -60,7 +60,6 @@
   "common.loading": "Loading…",
   "mesos.title": "Mesocycles",
   "mesos.new": "New meso",
-  "mesos.blank": "Blank",
   "mesos.duplicate": "Duplicate",
   "mesos.active": "Active",
   "mesos.activate": "Make active",
@@ -88,5 +87,6 @@
   "meso.invalid": "Please fix the highlighted fields.",
   "meso.moveUp": "Move up",
   "meso.moveDown": "Move down",
-  "meso.remove": "Remove"
+  "meso.remove": "Remove",
+  "meso.defaultDayName": "Day {n}"
 }
