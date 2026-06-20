@@ -8,6 +8,7 @@ import { addWeight } from '../../data/weightRepo'
 import { addGoal } from '../../data/goalRepo'
 import { ACTIVITY_FACTORS, type ActivityLevel } from '../../domain/energy'
 import type { Sex, Goal } from '../../domain/types'
+import { todayIso } from './today'
 
 const ACTIVITY_LEVELS = Object.keys(ACTIVITY_FACTORS) as ActivityLevel[]
 const GOALS: Goal[] = ['cut', 'maintain', 'bulk']
@@ -17,7 +18,6 @@ export function OnboardingPage() {
   const navigate = useNavigate()
   const { session } = useAuth()
   const { reload } = useProfileData()
-  const userId = session!.user.id
 
   const [sex, setSex] = useState<Sex>('male')
   const [dob, setDob] = useState('')
@@ -26,12 +26,17 @@ export function OnboardingPage() {
   const [activity, setActivity] = useState<ActivityLevel>('moderately_active')
   const [goal, setGoal] = useState<Goal>('maintain')
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  if (!session) return null // never rendered outside RequireAuth; guards the assertion below
+  const userId = session.user.id
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setSaving(true)
+    setError(null)
     try {
-      const today = new Date().toISOString().slice(0, 10)
+      const today = todayIso()
       await updateProfile(userId, {
         sex,
         date_of_birth: dob,
@@ -43,6 +48,9 @@ export function OnboardingPage() {
       await addGoal(userId, today, goal)
       await reload()
       navigate('/', { replace: true })
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[Onboarding] save failed:', err)
+      setError(t('common.error'))
     } finally {
       setSaving(false)
     }
@@ -86,6 +94,7 @@ export function OnboardingPage() {
           </select>
         </label>
 
+        {error && <p className="text-sm text-red-500">{error}</p>}
         <button type="submit" disabled={saving} className="w-full rounded-lg bg-indigo-600 px-5 py-3 font-semibold text-white disabled:opacity-60">
           {saving ? t('common.saving') : t('onboarding.submit')}
         </button>

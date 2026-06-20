@@ -26,7 +26,10 @@ export function ProfileDataProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   const reload = useCallback(async () => {
-    if (!userId) return
+    if (!userId) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const [p, w, g] = await Promise.all([getProfile(userId), getLatestWeight(userId), getLatestGoal(userId)])

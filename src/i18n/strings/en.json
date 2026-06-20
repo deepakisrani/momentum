@@ -25,5 +25,6 @@
   "activity.very_active": "Very active",
   "activity.extra_active": "Extra active",
   "onboarding.submit": "Finish setup",
-  "common.saving": "Saving…"
+  "common.saving": "Saving…",
+  "common.error": "Something went wrong — please try again."
 }
