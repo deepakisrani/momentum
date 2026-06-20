@@ -63,4 +63,47 @@ describe('suggestNextSetOne', () => {
     const r = suggestNextSetOne({ ...base, increment: 5, lastSession: sets({ weight: 60, reps: 12, rir: 2 }) })
     expect(r).toEqual({ weight: 65, repTarget: 8, reason: 'add_weight' })
   })
+
+  it('cut boundary: RIR exactly 3 at top-of-range adds weight', () => {
+    const r = suggestNextSetOne({ ...base, goal: 'cut', lastSession: sets({ weight: 60, reps: 12, rir: 3 }) })
+    expect(r).toEqual({ weight: 62.5, repTarget: 8, reason: 'add_weight' })
+  })
+
+  it('bulk below gate: RIR 0 at top-of-range holds', () => {
+    const r = suggestNextSetOne({ ...base, goal: 'bulk', lastSession: sets({ weight: 60, reps: 12, rir: 0 }) })
+    expect(r).toEqual({ weight: 60, repTarget: 12, reason: 'hold_no_reserve' })
+  })
+
+  it('fixed-rep scheme (min===max): adds weight when RIR clears the gate', () => {
+    const r = suggestNextSetOne({ ...base, repRange: { min: 10, max: 10 }, lastSession: sets({ weight: 60, reps: 10, rir: 2 }) })
+    expect(r).toEqual({ weight: 62.5, repTarget: 10, reason: 'add_weight' })
+  })
+
+  it('fixed-rep scheme (min===max): holds when RIR not logged', () => {
+    const r = suggestNextSetOne({ ...base, repRange: { min: 10, max: 10 }, lastSession: sets({ weight: 60, reps: 10, rir: null }) })
+    expect(r).toEqual({ weight: 60, repTarget: 10, reason: 'hold_missing_rir' })
+  })
+
+  it('top set with null RIR holds even when a lighter set had reserve', () => {
+    const r = suggestNextSetOne({ ...base, goal: 'bulk', lastSession: sets(
+      { weight: 70, reps: 12, rir: null },
+      { weight: 60, reps: 12, rir: 3 },
+    ) })
+    expect(r).toEqual({ weight: 70, repTarget: 12, reason: 'hold_missing_rir' })
+  })
+
+  it('one rep below the top caps the rep target at max', () => {
+    const r = suggestNextSetOne({ ...base, lastSession: sets({ weight: 60, reps: 11, rir: 2 }) })
+    expect(r).toEqual({ weight: 60, repTarget: 12, reason: 'add_rep' })
+  })
+
+  it('explicit increment of 0 is honored (not treated as default)', () => {
+    const r = suggestNextSetOne({ ...base, increment: 0, lastSession: sets({ weight: 60, reps: 12, rir: 2 }) })
+    expect(r).toEqual({ weight: 60, repTarget: 8, reason: 'add_weight' })
+  })
+
+  it('deload short-circuits regardless of a null RIR', () => {
+    const r = suggestNextSetOne({ ...base, isDeload: true, lastSession: sets({ weight: 62.5, reps: 12, rir: null }) })
+    expect(r).toEqual({ weight: 56.5, repTarget: 8, reason: 'deload' })
+  })
 })
