@@ -12,7 +12,7 @@ export function RequireOnboarding({ children }: { children: ReactNode }) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
         <p>{t('error.loadFailed')}</p>
-        <button onClick={() => void reload()} className="rounded-lg bg-indigo-600 px-5 py-2 font-semibold text-white">
+        <button onClick={() => void reload()} className="rounded-lg bg-brand-700 px-5 py-2 font-semibold text-white hover:bg-brand-800">
           {t('common.retry')}
         </button>
       </div>
