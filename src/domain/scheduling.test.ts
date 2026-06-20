@@ -27,6 +27,10 @@ describe('deload cadence + debt', () => {
     expect(nextDeloadDebt(true, true)).toBe(false)
     expect(nextDeloadDebt(false, false)).toBe(false)
   })
+  it('treats a non-positive microcycle number as not a deload (1-based)', () => {
+    expect(isScheduledDeload(0, 5)).toBe(false)
+    expect(shouldDeload(0, 5, false)).toBe(false)
+  })
 })
 
 describe('calendar-week slate', () => {
@@ -43,6 +47,16 @@ describe('calendar-week slate', () => {
     const weekStart = new Date(2026, 5, 15)
     expect(hasWeekRolledOver(weekStart, new Date(2026, 5, 19), 1)).toBe(false)
     expect(hasWeekRolledOver(weekStart, new Date(2026, 5, 22), 1)).toBe(true)
+  })
+  it('startOfWeek handles month and year boundaries', () => {
+    // Wed Jul 1 2026, Mon start -> Mon Jun 29 2026
+    expect(startOfWeek(new Date(2026, 6, 1), 1)).toEqual(new Date(2026, 5, 29))
+    // Thu Jan 1 2026, Mon start -> Mon Dec 29 2025
+    expect(startOfWeek(new Date(2026, 0, 1), 1)).toEqual(new Date(2025, 11, 29))
+  })
+  it('does not consider an earlier week as a rollover', () => {
+    const weekStart = new Date(2026, 5, 15)
+    expect(hasWeekRolledOver(weekStart, new Date(2026, 5, 8), 1)).toBe(false)
   })
 })
 

@@ -1,7 +1,10 @@
+import type { WeekStartsOn } from './types'
+
 // --- Deload cadence & debt ---
 
 export function isScheduledDeload(microcycleNumber: number, deloadEveryN: number | null): boolean {
   if (!deloadEveryN || deloadEveryN <= 0) return false
+  if (microcycleNumber <= 0) return false // microcycles are 1-based; cycle 0 is never a deload
   return microcycleNumber % deloadEveryN === 0
 }
 
@@ -20,14 +23,14 @@ export function nextDeloadDebt(deloadWasDue: boolean, actuallyDeloaded: boolean)
 
 // --- Calendar-week slate ---
 
-/** Day-types not yet completed this week, in their original order. */
+/** Day-types not yet completed this week, in their original order. Membership is by reference (===), so use primitive day-type ids. */
 export function remainingSlate<T>(allDayTypes: T[], completedThisWeek: T[]): T[] {
   const done = new Set(completedThisWeek)
   return allDayTypes.filter((d) => !done.has(d))
 }
 
 /** Midnight of the week-start day (weekStartsOn: 0=Sun..6=Sat) containing `d`. */
-export function startOfWeek(d: Date, weekStartsOn: number): Date {
+export function startOfWeek(d: Date, weekStartsOn: WeekStartsOn): Date {
   const date = new Date(d.getFullYear(), d.getMonth(), d.getDate())
   const diff = (date.getDay() - weekStartsOn + 7) % 7
   date.setDate(date.getDate() - diff)
@@ -35,7 +38,7 @@ export function startOfWeek(d: Date, weekStartsOn: number): Date {
 }
 
 /** True if `now` falls in a strictly later week than `currentWeekStart`. */
-export function hasWeekRolledOver(currentWeekStart: Date, now: Date, weekStartsOn: number): boolean {
+export function hasWeekRolledOver(currentWeekStart: Date, now: Date, weekStartsOn: WeekStartsOn): boolean {
   return startOfWeek(now, weekStartsOn).getTime() > startOfWeek(currentWeekStart, weekStartsOn).getTime()
 }
 

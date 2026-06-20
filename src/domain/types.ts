@@ -4,6 +4,9 @@ export type Mechanic = 'compound' | 'isolation'
 export type Units = 'metric' | 'imperial'
 export type SchedulingStyle = 'calendar_week' | 'continuous'
 
+/** Day a calendar week starts on: 0=Sunday .. 6=Saturday. */
+export type WeekStartsOn = 0 | 1 | 2 | 3 | 4 | 5 | 6
+
 export interface RepRange {
   min: number
   max: number
