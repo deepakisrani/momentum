@@ -67,7 +67,8 @@ export function suggestNextSetOne(input: SuggestionInput): Suggestion | null {
       return { weight: top.weight, repTarget: repRange.max, reason: 'hold_missing_rir' }
     }
     if (top.rir >= RIR_GATE[goal]) {
-      return { weight: top.weight + increment, repTarget: repRange.min, reason: 'add_weight' }
+      const next = increment > 0 ? roundTo(top.weight + increment, increment) : top.weight + increment
+      return { weight: next, repTarget: repRange.min, reason: 'add_weight' }
     }
     return { weight: top.weight, repTarget: repRange.max, reason: 'hold_no_reserve' }
   }

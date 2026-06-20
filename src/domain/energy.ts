@@ -30,6 +30,22 @@ export const GOAL_CALORIE_ADJUSTMENT: Record<Goal, number> = {
   maintain: 0,
 }
 
+export type ActivityLevel =
+  | 'sedentary'
+  | 'lightly_active'
+  | 'moderately_active'
+  | 'very_active'
+  | 'extra_active'
+
+/** Standard Mifflin–St Jeor activity multipliers (baseline non-exercise activity). */
+export const ACTIVITY_FACTORS: Record<ActivityLevel, number> = {
+  sedentary: 1.2,
+  lightly_active: 1.375,
+  moderately_active: 1.55,
+  very_active: 1.725,
+  extra_active: 1.9,
+}
+
 export function calorieTarget(tdeeValue: number, goal: Goal): number {
   return Math.round(tdeeValue * (1 + GOAL_CALORIE_ADJUSTMENT[goal]))
 }

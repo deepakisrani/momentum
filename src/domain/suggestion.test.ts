@@ -102,6 +102,11 @@ describe('suggestNextSetOne', () => {
     expect(r).toEqual({ weight: 60, repTarget: 8, reason: 'add_weight' })
   })
 
+  it('snaps an off-grid starting weight onto the increment grid when adding weight', () => {
+    const r = suggestNextSetOne({ ...base, lastSession: sets({ weight: 11.5, reps: 12, rir: 2 }) })
+    expect(r).toEqual({ weight: 15, repTarget: 8, reason: 'add_weight' }) // roundTo(11.5+2.5, 2.5)=15
+  })
+
   it('deload short-circuits regardless of a null RIR', () => {
     const r = suggestNextSetOne({ ...base, isDeload: true, lastSession: sets({ weight: 62.5, reps: 12, rir: null }) })
     expect(r).toEqual({ weight: 56.5, repTarget: 8, reason: 'deload' })
