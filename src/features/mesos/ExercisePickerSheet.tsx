@@ -39,7 +39,7 @@ export function ExercisePickerSheet({ onPick, onClose }: { onPick: (ex: Exercise
             onClick={() => setShowAdd(true)}
             className="mb-3 w-full rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-brand-700 dark:bg-[#1b2030] dark:text-brand-400"
           >
-            + {t('exercises.addCustom')}
+            {t('exercises.addCustom')}
           </button>
         ) : (
           <div className="mb-3">
@@ -47,7 +47,7 @@ export function ExercisePickerSheet({ onPick, onClose }: { onPick: (ex: Exercise
               userId={userId}
               muscleOptions={muscles}
               equipmentOptions={equipment}
-              onAdded={(row) => onPick(row)}
+              onAdded={onPick}
               onCancel={() => setShowAdd(false)}
             />
           </div>
