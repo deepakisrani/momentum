@@ -145,3 +145,20 @@ export async function deleteMeso(mesoId: string): Promise<void> {
   const { error } = await supabase.from('meso').delete().eq('id', mesoId)
   if (error) throw error
 }
+
+export async function getActiveMeso(userId: string): Promise<MesoRow | null> {
+  const { data, error } = await supabase
+    .from('meso').select('*').eq('user_id', userId).eq('is_active', true).maybeSingle()
+  if (error) throw error
+  return data as MesoRow | null
+}
+
+/** Map of exercise_id -> { targetSets, repMin, repMax } for a meso day (for targets + suggestions). */
+export async function getMesoDayTargets(mesoDayId: string): Promise<Record<string, { targetSets: number; repMin: number; repMax: number }>> {
+  const { data, error } = await supabase
+    .from('meso_day_exercise').select('exercise_id, target_sets, rep_min, rep_max').eq('meso_day_id', mesoDayId)
+  if (error) throw error
+  const map: Record<string, { targetSets: number; repMin: number; repMax: number }> = {}
+  for (const r of data ?? []) map[r.exercise_id] = { targetSets: r.target_sets, repMin: r.rep_min, repMax: r.rep_max }
+  return map
+}

@@ -62,3 +62,39 @@ export interface MesoDayExerciseRow {
   rep_min: number
   rep_max: number
 }
+
+export interface WorkoutSessionRow {
+  id: string
+  user_id: string
+  meso_id: string | null
+  microcycle_id: string | null
+  meso_day_id: string | null
+  started_at: string
+  ended_at: string | null
+  is_deload: boolean
+  status: 'in_progress' | 'completed' | 'skipped'
+}
+
+export interface SessionExerciseRow {
+  id: string
+  session_id: string
+  exercise_id: string
+  source: 'planned' | 'swapped' | 'added'
+  order_index: number
+}
+
+export interface LoggedSetRow {
+  id: string
+  session_exercise_id: string
+  set_index: number
+  is_drop_set: boolean
+}
+
+export interface SetSegmentRow {
+  id: string
+  logged_set_id: string
+  segment_index: number
+  weight: number
+  reps: number
+  rir: number | null
+}
