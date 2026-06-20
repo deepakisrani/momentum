@@ -19,7 +19,7 @@ export interface NewExercise {
 export async function addCustomExercise(userId: string, ex: NewExercise): Promise<ExerciseRow> {
   const { data, error } = await supabase
     .from('exercise')
-    .insert({ owner_user_id: userId, is_public: false, ...ex })
+    .insert({ ...ex, owner_user_id: userId, is_public: false })
     .select('*')
     .single()
   if (error) throw error

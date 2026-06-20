@@ -34,6 +34,15 @@ describe('filterExercises', () => {
     const r = filterExercises(list, { query: 'curl', muscleGroup: 'biceps', mechanic: 'isolation' })
     expect(r.map((e) => e.id)).toEqual(['3'])
   })
+  it('includes null-mechanic exercises when mechanic is "all"', () => {
+    const withNull = [...list, ex({ id: '6', mechanic: null })]
+    expect(filterExercises(withNull, { query: '', muscleGroup: 'all', mechanic: 'all' })).toHaveLength(5)
+  })
+  it('excludes null-mechanic exercises when a specific mechanic is selected', () => {
+    const withNull = [...list, ex({ id: '6', mechanic: null })]
+    const r = filterExercises(withNull, { query: '', muscleGroup: 'all', mechanic: 'compound' })
+    expect(r.find((e) => e.id === '6')).toBeUndefined()
+  })
 })
 
 describe('distinct helpers', () => {
