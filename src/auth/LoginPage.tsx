@@ -19,7 +19,7 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#0f1115] text-white">
-      <h1 className="text-3xl font-bold">{t('app.name')}</h1>
+      <img src="/momentum-wordmark.png" alt={t('app.name')} className="w-64 max-w-[80%]" />
       <button onClick={signIn} className="rounded-lg bg-indigo-600 px-5 py-3 font-semibold">
         {t('auth.signInWithGoogle')}
       </button>
