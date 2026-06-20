@@ -1,18 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useT } from '../../i18n/I18nProvider'
+import { useAuth } from '../../auth/useAuth'
 import { listExercises } from '../../data/exerciseRepo'
-import { filterExercises, distinctMuscleGroups } from '../exercises/filterExercises'
+import { filterExercises, distinctMuscleGroups, distinctEquipment } from '../exercises/filterExercises'
+import { AddExerciseForm } from '../exercises/AddExerciseForm'
 import type { ExerciseRow } from '../../data/rows'
 
 export function ExercisePickerSheet({ onPick, onClose }: { onPick: (ex: ExerciseRow) => void; onClose: () => void }) {
   const t = useT()
+  const { session } = useAuth()
+  const userId = session?.user.id ?? ''
   const [all, setAll] = useState<ExerciseRow[]>([])
   const [query, setQuery] = useState('')
   const [muscleGroup, setMuscleGroup] = useState<string | 'all'>('all')
+  const [showAdd, setShowAdd] = useState(false)
 
   useEffect(() => { listExercises().then(setAll).catch(() => {}) }, [])
 
   const muscles = useMemo(() => distinctMuscleGroups(all), [all])
+  const equipment = useMemo(() => distinctEquipment(all), [all])
   const filtered = useMemo(() => filterExercises(all, { query, muscleGroup, mechanic: 'all' }), [all, query, muscleGroup])
   const control = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-[#1b2030] dark:text-white'
 
@@ -28,6 +34,24 @@ export function ExercisePickerSheet({ onPick, onClose }: { onPick: (ex: Exercise
           <option value="all">{t('exercises.allMuscles')}</option>
           {muscles.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
+        {!showAdd ? (
+          <button
+            onClick={() => setShowAdd(true)}
+            className="mb-3 w-full rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-brand-700 dark:bg-[#1b2030] dark:text-brand-400"
+          >
+            + {t('exercises.addCustom')}
+          </button>
+        ) : (
+          <div className="mb-3">
+            <AddExerciseForm
+              userId={userId}
+              muscleOptions={muscles}
+              equipmentOptions={equipment}
+              onAdded={(row) => onPick(row)}
+              onCancel={() => setShowAdd(false)}
+            />
+          </div>
+        )}
         <ul className="space-y-1">
           {filtered.map((e) => (
             <li key={e.id}>
