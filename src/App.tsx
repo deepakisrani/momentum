@@ -7,6 +7,8 @@ import { RequireOnboarding } from './features/profile/RequireOnboarding'
 import { OnboardingPage } from './features/profile/OnboardingPage'
 import { DashboardPage } from './features/profile/DashboardPage'
 import { ExerciseLibraryPage } from './features/exercises/ExerciseLibraryPage'
+import { MesoListPage } from './features/mesos/MesoListPage'
+import { MesoBuilderPage } from './features/mesos/MesoBuilderPage'
 
 export default function App() {
   return (
@@ -22,6 +24,9 @@ export default function App() {
                 <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/" element={<RequireOnboarding><DashboardPage /></RequireOnboarding>} />
                 <Route path="/exercises" element={<RequireOnboarding><ExerciseLibraryPage /></RequireOnboarding>} />
+                <Route path="/mesos" element={<RequireOnboarding><MesoListPage /></RequireOnboarding>} />
+                <Route path="/mesos/new" element={<RequireOnboarding><MesoBuilderPage /></RequireOnboarding>} />
+                <Route path="/mesos/:id/edit" element={<RequireOnboarding><MesoBuilderPage /></RequireOnboarding>} />
               </Routes>
             </ProfileDataProvider>
           </RequireAuth>
