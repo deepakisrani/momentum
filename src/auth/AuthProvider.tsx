@@ -2,8 +2,8 @@ import { createContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 
-type AuthState = { session: Session | null; loading: boolean }
-export const AuthContext = createContext<AuthState>({ session: null, loading: true })
+type AuthState = { session: Session | null; loading: boolean; signOut: () => Promise<void> }
+export const AuthContext = createContext<AuthState>({ session: null, loading: true, signOut: async () => {} })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
@@ -18,5 +18,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe()
   }, [])
 
-  return <AuthContext.Provider value={{ session, loading }}>{children}</AuthContext.Provider>
+  const signOut = async () => {
+    await supabase.auth.signOut()
+  }
+
+  return <AuthContext.Provider value={{ session, loading, signOut }}>{children}</AuthContext.Provider>
 }

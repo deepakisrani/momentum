@@ -10,11 +10,12 @@ export interface ProfileData {
   latestWeight: WeightLogRow | null
   latestGoal: GoalLogRow | null
   loading: boolean
+  error: Error | null
   reload: () => Promise<void>
 }
 
 export const ProfileDataContext = createContext<ProfileData>({
-  profile: null, latestWeight: null, latestGoal: null, loading: true, reload: async () => {},
+  profile: null, latestWeight: null, latestGoal: null, loading: true, error: null, reload: async () => {},
 })
 
 export function ProfileDataProvider({ children }: { children: ReactNode }) {
@@ -24,6 +25,7 @@ export function ProfileDataProvider({ children }: { children: ReactNode }) {
   const [latestWeight, setLatestWeight] = useState<WeightLogRow | null>(null)
   const [latestGoal, setLatestGoal] = useState<GoalLogRow | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   const reload = useCallback(async () => {
     if (!userId) {
@@ -36,6 +38,9 @@ export function ProfileDataProvider({ children }: { children: ReactNode }) {
       setProfile(p)
       setLatestWeight(w)
       setLatestGoal(g)
+      setError(null)
+    } catch (err) {
+      setError(err as Error)
     } finally {
       setLoading(false)
     }
@@ -46,7 +51,7 @@ export function ProfileDataProvider({ children }: { children: ReactNode }) {
   }, [reload])
 
   return (
-    <ProfileDataContext.Provider value={{ profile, latestWeight, latestGoal, loading, reload }}>
+    <ProfileDataContext.Provider value={{ profile, latestWeight, latestGoal, loading, error, reload }}>
       {children}
     </ProfileDataContext.Provider>
   )

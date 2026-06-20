@@ -28,6 +28,7 @@
   "common.saving": "Saving…",
   "common.error": "Something went wrong — please try again.",
   "common.save": "Save",
+  "common.retry": "Retry",
   "dashboard.title": "Today",
   "dashboard.bmr": "BMR",
   "dashboard.maintenance": "Maintenance",
@@ -36,5 +37,6 @@
   "dashboard.currentGoal": "Goal",
   "dashboard.logWeight": "Log weight",
   "dashboard.changeGoal": "Change goal",
-  "dashboard.kcal": "kcal"
+  "dashboard.kcal": "kcal",
+  "error.loadFailed": "Couldn't load your data."
 }

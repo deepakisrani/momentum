@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
 import { ThemeToggle } from '../../theme/ThemeToggle'
@@ -14,10 +13,11 @@ const GOALS: Goal[] = ['cut', 'maintain', 'bulk']
 
 export function DashboardPage() {
   const t = useT()
-  const { session } = useAuth()
+  const { session, signOut } = useAuth()
   const { profile, latestWeight, latestGoal, reload } = useProfileData()
   const [weightInput, setWeightInput] = useState('')
   const [busy, setBusy] = useState(false)
+  const [logError, setLogError] = useState<string | null>(null)
 
   // The RequireOnboarding guard guarantees these are present; this satisfies the type-checker.
   if (!session || !profile || !latestWeight || !latestGoal || !profile.sex || !profile.date_of_birth || profile.height_cm == null) {
@@ -27,7 +27,7 @@ export function DashboardPage() {
 
   const summary = buildEnergySummary({
     sex: profile.sex,
-    dob: new Date(profile.date_of_birth),
+    dob: new Date(profile.date_of_birth + 'T12:00:00'), // parse YYYY-MM-DD in local time, not UTC
     heightCm: profile.height_cm,
     weightKg: latestWeight.weight_kg,
     activityFactor: profile.baseline_activity_level,
@@ -38,10 +38,14 @@ export function DashboardPage() {
   async function logWeight() {
     if (!weightInput) return
     setBusy(true)
+    setLogError(null)
     try {
       await addWeight(userId, todayIso(), Number(weightInput))
       setWeightInput('')
       await reload()
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[Dashboard] logWeight failed:', err)
+      setLogError(t('common.error'))
     } finally {
       setBusy(false)
     }
@@ -49,9 +53,13 @@ export function DashboardPage() {
 
   async function changeGoal(goal: Goal) {
     setBusy(true)
+    setLogError(null)
     try {
       await addGoal(userId, todayIso(), goal)
       await reload()
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[Dashboard] changeGoal failed:', err)
+      setLogError(t('common.error'))
     } finally {
       setBusy(false)
     }
@@ -109,7 +117,8 @@ export function DashboardPage() {
           </div>
         </div>
 
-        <button onClick={() => supabase.auth.signOut()} className="block w-full text-center text-sm text-slate-500 underline dark:text-slate-400">
+        {logError && <p className="text-center text-sm text-red-500">{logError}</p>}
+        <button onClick={() => signOut()} className="block w-full text-center text-sm text-slate-500 underline dark:text-slate-400">
           {t('auth.signOut')}
         </button>
       </div>

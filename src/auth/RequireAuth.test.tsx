@@ -6,7 +6,7 @@ import { RequireAuth } from './RequireAuth'
 
 function renderAt(session: any, loading = false) {
   return render(
-    <AuthContext.Provider value={{ session, loading }}>
+    <AuthContext.Provider value={{ session, loading, signOut: async () => {} }}>
       <MemoryRouter initialEntries={['/secret']} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/login" element={<div>login page</div>} />
