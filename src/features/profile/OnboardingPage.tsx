@@ -7,7 +7,8 @@ import { updateProfile } from '../../data/profileRepo'
 import { addWeight } from '../../data/weightRepo'
 import { addGoal } from '../../data/goalRepo'
 import { ACTIVITY_FACTORS, type ActivityLevel } from '../../domain/energy'
-import type { Sex, Goal } from '../../domain/types'
+import type { Sex, Goal, Units } from '../../domain/types'
+import { fromInputWeight, fromInputHeight, weightUnitLabel, heightUnitLabel } from './unitsFormat'
 import { todayIso } from './today'
 import { Wordmark } from '../../components/Wordmark'
 
@@ -20,6 +21,7 @@ export function OnboardingPage() {
   const { session } = useAuth()
   const { reload } = useProfileData()
 
+  const [units, setUnits] = useState<Units>('metric')
   const [sex, setSex] = useState<Sex>('male')
   const [dob, setDob] = useState('')
   const [heightCm, setHeightCm] = useState('')
@@ -41,11 +43,11 @@ export function OnboardingPage() {
       await updateProfile(userId, {
         sex,
         date_of_birth: dob,
-        height_cm: Number(heightCm),
+        height_cm: fromInputHeight(Number(heightCm), units),
         baseline_activity_level: ACTIVITY_FACTORS[activity],
-        units_pref: 'metric',
+        units_pref: units,
       })
-      await addWeight(userId, today, Number(weightKg))
+      await addWeight(userId, today, fromInputWeight(Number(weightKg), units))
       await addGoal(userId, today, goal)
       await reload()
       navigate('/', { replace: true })
@@ -65,6 +67,13 @@ export function OnboardingPage() {
         <Wordmark className="mx-auto mb-2 h-9" />
         <h1 className="text-2xl font-bold">{t('onboarding.title')}</h1>
 
+        <label className="block text-sm">{t('onboarding.units')}
+          <select className={field} value={units} onChange={(e) => setUnits(e.target.value as Units)}>
+            <option value="metric">{t('settings.units.metric')}</option>
+            <option value="imperial">{t('settings.units.imperial')}</option>
+          </select>
+        </label>
+
         <label className="block text-sm">{t('onboarding.sex')}
           <select className={field} value={sex} onChange={(e) => setSex(e.target.value as Sex)}>
             <option value="male">{t('onboarding.male')}</option>
@@ -76,11 +85,11 @@ export function OnboardingPage() {
           <input className={field} type="date" required value={dob} onChange={(e) => setDob(e.target.value)} />
         </label>
 
-        <label className="block text-sm">{t('onboarding.height')}
+        <label className="block text-sm">{t('onboarding.height')} ({heightUnitLabel(units)})
           <input className={field} type="number" inputMode="decimal" required min="50" max="260" value={heightCm} onChange={(e) => setHeightCm(e.target.value)} />
         </label>
 
-        <label className="block text-sm">{t('onboarding.weight')}
+        <label className="block text-sm">{t('onboarding.weight')} ({weightUnitLabel(units)})
           <input className={field} type="number" inputMode="decimal" required min="20" max="400" step="0.1" value={weightKg} onChange={(e) => setWeightKg(e.target.value)} />
         </label>
 

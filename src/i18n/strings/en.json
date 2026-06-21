@@ -12,8 +12,8 @@
   "onboarding.male": "Male",
   "onboarding.female": "Female",
   "onboarding.dob": "Date of birth",
-  "onboarding.height": "Height (cm)",
-  "onboarding.weight": "Current weight (kg)",
+  "onboarding.height": "Height",
+  "onboarding.weight": "Current weight",
   "onboarding.activity": "Daily activity (excluding workouts)",
   "onboarding.goal": "Goal",
   "goal.cut": "Cut",
@@ -113,5 +113,11 @@
   "workout.suggestion.hold_missing_rir": "Hold — log RIR for weight suggestions",
   "workout.suggestion.rebuild": "Rebuild to the bottom of the range",
   "workout.suggestion.deload": "Deload — keep it easy",
-  "nav.workout": "Workout"
+  "nav.workout": "Workout",
+  "settings.title": "Settings",
+  "settings.units": "Units",
+  "settings.units.metric": "Metric (kg, cm)",
+  "settings.units.imperial": "Imperial (lb, in)",
+  "settings.theme": "Theme",
+  "onboarding.units": "Units"
 }
