@@ -35,14 +35,58 @@ async function tile(size) {
 await tile(512)
 await tile(192)
 
+// "Any"-purpose tiles: tight mark filling the square (less padding than the
+// maskable tiles, which look over-padded in non-masked contexts like the
+// install dialog and app list).
+async function anyTile(size) {
+  await sharp(MARK)
+    .trim()
+    .resize(size, size, { fit: 'contain', background: { ...TILE, alpha: 1 } })
+    .flatten({ background: TILE })
+    .png()
+    .toFile(`${PUBLIC}icon-any-${size}.png`)
+}
+await anyTile(512)
+await anyTile(192)
+
 // Apple touch icon: opaque white tile, 180px.
 await sharp(`${PUBLIC}icon-512.png`).resize(180, 180).png().toFile(`${PUBLIC}apple-touch-icon.png`)
+
+// PWA install-dialog screenshots (branded title cards). Wide = desktop,
+// narrow = mobile. Placeholders — swap with real in-app captures anytime.
+async function screenshot(name, w, h, markW) {
+  const wm = await sharp(WORDMARK_DARK).trim().resize({ width: markW }).toBuffer()
+  const { height: wmH } = await sharp(wm).metadata()
+  const bg = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
+      <defs>
+        <radialGradient id="g" cx="50%" cy="38%" r="70%">
+          <stop offset="0%" stop-color="#0c6aa6" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#0f1115" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="${w}" height="${h}" fill="#0f1115"/>
+      <rect width="${w}" height="${h}" fill="url(#g)"/>
+      <text x="50%" y="${Math.round(h * 0.42 + wmH * 0.5 + 64)}" text-anchor="middle"
+        font-family="Inter Tight, Arial, sans-serif" font-size="${Math.round(w * 0.028)}"
+        fill="#94a3b8">Hypertrophy training, tracked.</text>
+    </svg>`,
+  )
+  await sharp(bg)
+    .composite([{ input: wm, left: Math.round((w - markW) / 2), top: Math.round(h * 0.42 - wmH / 2) }])
+    .png()
+    .toFile(`${PUBLIC}${name}`)
+}
+await screenshot('screenshot-wide.png', 1280, 800, 560)
+await screenshot('screenshot-narrow.png', 1080, 1920, 760)
 
 // Wordmarks: trim margins, keep each one's own background (light has white, dark is transparent).
 await sharp(WORDMARK_LIGHT).trim().png().toFile(`${PUBLIC}momentum-wordmark-light.png`)
 await sharp(WORDMARK_DARK).trim().png().toFile(`${PUBLIC}momentum-wordmark-dark.png`)
 
 console.log('icons generated:', [
-  'favicon.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png',
+  'favicon.png', 'icon-192.png', 'icon-512.png',
+  'icon-any-192.png', 'icon-any-512.png', 'apple-touch-icon.png',
+  'screenshot-wide.png', 'screenshot-narrow.png',
   'momentum-wordmark-light.png', 'momentum-wordmark-dark.png',
 ].join(', '))

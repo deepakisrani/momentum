@@ -18,9 +18,18 @@ export default defineConfig(({ command }) => ({
         display: 'standalone',
         // Relative (no leading slash) so they resolve against the manifest's
         // own URL — correct under both the / dev base and the /momentum/ prod base.
+        // Separate `any` (tight) and `maskable` (padded safe-zone) icons — one
+        // image for both purposes renders incorrectly on some platforms.
         icons: [
-          { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+          { src: 'icon-any-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'icon-any-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
+        // Unlocks the richer install dialog. `wide` = desktop, the other = mobile.
+        screenshots: [
+          { src: 'screenshot-wide.png', sizes: '1280x800', type: 'image/png', form_factor: 'wide', label: 'Momentum' },
+          { src: 'screenshot-narrow.png', sizes: '1080x1920', type: 'image/png', label: 'Momentum' },
         ],
       },
     }),
