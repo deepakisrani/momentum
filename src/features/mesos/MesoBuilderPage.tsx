@@ -111,10 +111,12 @@ export function MesoBuilderPage() {
         {day && (
           <div className="space-y-3 rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">
             <div className="flex items-center gap-2">
-              <input className={`${control} flex-1`} placeholder={t('meso.dayLabel')} value={day.label} onChange={(e) => update((d) => { d.days[activeDay].label = e.target.value })} />
-              <button onClick={() => moveDay(activeDay, -1)} aria-label={t('meso.moveUp')} className="px-2">↑</button>
-              <button onClick={() => moveDay(activeDay, 1)} aria-label={t('meso.moveDown')} className="px-2">↓</button>
-              <button onClick={() => removeDay(activeDay)} aria-label={t('meso.removeDay')} className="px-2 text-red-500">🗑</button>
+              <input className={`${control} min-w-0 flex-1`} placeholder={t('meso.dayLabel')} value={day.label} onChange={(e) => update((d) => { d.days[activeDay].label = e.target.value })} />
+              <div className="flex shrink-0 items-center gap-1">
+                <button onClick={() => moveDay(activeDay, -1)} aria-label={t('meso.moveUp')} className="px-1.5">↑</button>
+                <button onClick={() => moveDay(activeDay, 1)} aria-label={t('meso.moveDown')} className="px-1.5">↓</button>
+                <button onClick={() => removeDay(activeDay)} aria-label={t('meso.removeDay')} className="px-1.5 text-red-500">🗑</button>
+              </div>
             </div>
 
             {day.exercises.length === 0 && <p className="text-sm text-slate-500 dark:text-slate-400">{t('meso.noExercises')}</p>}
