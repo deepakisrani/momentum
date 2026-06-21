@@ -179,11 +179,16 @@ function Header({ startIso, isDeload, onEnd, onToggleDeload, busy }: { startIso:
           <div className="text-xs opacity-85">{t('workout.inProgress')}</div>
           <div className="text-2xl font-bold tabular-nums">{elapsed}</div>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={onToggleDeload} className={`rounded-lg px-2 py-1 text-xs font-semibold ${isDeload ? 'bg-white text-brand-700' : 'bg-white/20'}`}>
-            🌙 {t('workout.deload')}
+        <div className="flex items-center gap-4">
+          <button onClick={onToggleDeload} role="switch" aria-checked={isDeload} className="flex items-center gap-2 text-sm font-semibold">
+            {t('workout.deload')}
+            <span className={`relative inline-block h-6 w-11 rounded-full transition-colors ${isDeload ? 'bg-white' : 'bg-white/30'}`}>
+              <span className={`absolute top-0.5 h-5 w-5 rounded-full transition-all ${isDeload ? 'left-[22px] bg-brand-700' : 'left-0.5 bg-white'}`} />
+            </span>
           </button>
-          <button disabled={busy} onClick={onEnd} className="rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-brand-700 disabled:opacity-60">{t('workout.end')}</button>
+          <button disabled={busy} onClick={onEnd} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold uppercase tracking-wide text-white hover:bg-red-700 disabled:opacity-60">
+            {t('workout.end')}
+          </button>
         </div>
       </div>
     </div>
