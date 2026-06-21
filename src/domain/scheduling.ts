@@ -49,3 +49,21 @@ export function nextInRotation<T>(orderedDayTypes: T[], completedCount: number):
   if (orderedDayTypes.length === 0) return null
   return orderedDayTypes[completedCount % orderedDayTypes.length]
 }
+
+// --- Sliding-window deload ---
+
+/** Count of the most-recent consecutive NON-deload sessions (i.e., sessions completed since the last actual deload). Input is newest-first. */
+export function sessionsSinceLastDeload(sessionsNewestFirst: { isDeload: boolean }[]): number {
+  let n = 0
+  for (const s of sessionsNewestFirst) {
+    if (s.isDeload) break
+    n++
+  }
+  return n
+}
+
+/** Carry-forward sliding window: the session about to start is a deload when sessions-since-last-deload + 1 >= N. Overridden (non-deload) sessions don't reset the window, so a skipped deload stays due. */
+export function isDeloadDue(sessionsSinceLastDeload: number, deloadEveryN: number | null): boolean {
+  if (!deloadEveryN || deloadEveryN <= 0) return false
+  return sessionsSinceLastDeload + 1 >= deloadEveryN
+}

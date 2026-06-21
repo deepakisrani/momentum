@@ -7,6 +7,8 @@ import {
   startOfWeek,
   hasWeekRolledOver,
   nextInRotation,
+  sessionsSinceLastDeload,
+  isDeloadDue,
 } from './scheduling'
 
 describe('deload cadence + debt', () => {
@@ -67,5 +69,38 @@ describe('continuous rotation', () => {
     expect(nextInRotation(rot, 2)).toBe('legs')
     expect(nextInRotation(rot, 3)).toBe('push')
     expect(nextInRotation([], 0)).toBeNull()
+  })
+})
+
+describe('sessionsSinceLastDeload', () => {
+  const w = { isDeload: false }
+  const d = { isDeload: true }
+  it('counts all when there has never been a deload', () => {
+    expect(sessionsSinceLastDeload([w, w, w])).toBe(3)
+    expect(sessionsSinceLastDeload([])).toBe(0)
+  })
+  it('counts only sessions since the most recent deload (newest-first input)', () => {
+    expect(sessionsSinceLastDeload([w, w, d, w])).toBe(2)
+  })
+  it('is 0 when the most recent session was a deload', () => {
+    expect(sessionsSinceLastDeload([d, w, w])).toBe(0)
+  })
+})
+
+describe('isDeloadDue', () => {
+  it('is false when N is null or non-positive', () => {
+    expect(isDeloadDue(10, null)).toBe(false)
+    expect(isDeloadDue(10, 0)).toBe(false)
+  })
+  it('fires on the Nth session (4 done since last deload, starting the 5th, N=5)', () => {
+    expect(isDeloadDue(4, 5)).toBe(true)
+    expect(isDeloadDue(3, 5)).toBe(false)
+  })
+  it('carries forward: if overridden, stays due past N (5 since last deload, N=5)', () => {
+    expect(isDeloadDue(5, 5)).toBe(true)
+    expect(isDeloadDue(8, 5)).toBe(true)
+  })
+  it('resets after an actual deload (0 since, N=5)', () => {
+    expect(isDeloadDue(0, 5)).toBe(false)
   })
 })
