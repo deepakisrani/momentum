@@ -5,8 +5,6 @@ import { useT } from '../../i18n/I18nProvider'
 import { useProfileData } from './useProfileData'
 import { buildEnergySummary } from './energySummary'
 import { getActiveSession } from '../../data/sessionRepo'
-import { AvatarMenu } from './AvatarMenu'
-import { Wordmark } from '../../components/Wordmark'
 
 export function DashboardPage() {
   const t = useT()
@@ -36,10 +34,6 @@ export function DashboardPage() {
   return (
     <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
       <div className="mx-auto max-w-md space-y-6">
-        <div className="flex items-center justify-between">
-          <Wordmark className="h-8" />
-          <AvatarMenu />
-        </div>
         <div>
           <h1 className="text-2xl font-bold">{t('home.welcome')}{firstName ? `, ${firstName}` : ''}</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">{t('home.targetCalories')}: {summary.target} {t('dashboard.kcal')}</p>

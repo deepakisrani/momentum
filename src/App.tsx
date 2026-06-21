@@ -12,6 +12,7 @@ import { MesoBuilderPage } from './features/mesos/MesoBuilderPage'
 import { ActiveWorkoutPage } from './features/session/ActiveWorkoutPage'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { GoalsPage } from './features/profile/GoalsPage'
+import { AppLayout } from './components/AppLayout'
 
 export default function App() {
   return (
@@ -25,14 +26,16 @@ export default function App() {
             <ProfileDataProvider>
               <Routes>
                 <Route path="/onboarding" element={<OnboardingPage />} />
-                <Route path="/" element={<RequireOnboarding><DashboardPage /></RequireOnboarding>} />
-                <Route path="/exercises" element={<RequireOnboarding><ExerciseLibraryPage /></RequireOnboarding>} />
-                <Route path="/mesos" element={<RequireOnboarding><MesoListPage /></RequireOnboarding>} />
-                <Route path="/mesos/new" element={<RequireOnboarding><MesoBuilderPage /></RequireOnboarding>} />
-                <Route path="/mesos/:id/edit" element={<RequireOnboarding><MesoBuilderPage /></RequireOnboarding>} />
-                <Route path="/workout" element={<RequireOnboarding><ActiveWorkoutPage /></RequireOnboarding>} />
-                <Route path="/settings" element={<RequireOnboarding><SettingsPage /></RequireOnboarding>} />
-                <Route path="/goals" element={<RequireOnboarding><GoalsPage /></RequireOnboarding>} />
+                <Route element={<RequireOnboarding><AppLayout /></RequireOnboarding>}>
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/exercises" element={<ExerciseLibraryPage />} />
+                  <Route path="/mesos" element={<MesoListPage />} />
+                  <Route path="/mesos/new" element={<MesoBuilderPage />} />
+                  <Route path="/mesos/:id/edit" element={<MesoBuilderPage />} />
+                  <Route path="/workout" element={<ActiveWorkoutPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/goals" element={<GoalsPage />} />
+                </Route>
               </Routes>
             </ProfileDataProvider>
           </RequireAuth>

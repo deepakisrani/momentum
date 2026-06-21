@@ -24,7 +24,7 @@ export function AvatarMenu() {
 
   return (
     <div className="relative" ref={ref}>
-      <button onClick={() => setOpen((o) => !o)} aria-label={t('nav.menu')} className="h-10 w-10 overflow-hidden rounded-full bg-brand-600 text-sm font-bold text-white">
+      <button onClick={() => setOpen((o) => !o)} aria-label={t('nav.menu')} className="h-9 w-9 overflow-hidden rounded-full bg-brand-600 text-sm font-bold text-white">
         {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : <span className="flex h-full w-full items-center justify-center">{initials}</span>}
       </button>
       {open && (
