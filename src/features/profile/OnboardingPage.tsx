@@ -61,6 +61,11 @@ export function OnboardingPage() {
 
   const field = 'w-full rounded-lg bg-white px-3 py-2 text-slate-900 dark:bg-[#1b2030] dark:text-white'
 
+  const heightMin = units === 'imperial' ? 20 : 50
+  const heightMax = units === 'imperial' ? 96 : 260
+  const weightMin = units === 'imperial' ? 40 : 20
+  const weightMax = units === 'imperial' ? 900 : 400
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
       <form onSubmit={onSubmit} className="w-full max-w-sm space-y-4">
@@ -86,11 +91,11 @@ export function OnboardingPage() {
         </label>
 
         <label className="block text-sm">{t('onboarding.height')} ({heightUnitLabel(units)})
-          <input className={field} type="number" inputMode="decimal" required min="50" max="260" value={heightCm} onChange={(e) => setHeightCm(e.target.value)} />
+          <input className={field} type="number" inputMode="decimal" required min={heightMin} max={heightMax} value={heightCm} onChange={(e) => setHeightCm(e.target.value)} />
         </label>
 
         <label className="block text-sm">{t('onboarding.weight')} ({weightUnitLabel(units)})
-          <input className={field} type="number" inputMode="decimal" required min="20" max="400" step="0.1" value={weightKg} onChange={(e) => setWeightKg(e.target.value)} />
+          <input className={field} type="number" inputMode="decimal" required min={weightMin} max={weightMax} step="0.1" value={weightKg} onChange={(e) => setWeightKg(e.target.value)} />
         </label>
 
         <label className="block text-sm">{t('onboarding.activity')}
