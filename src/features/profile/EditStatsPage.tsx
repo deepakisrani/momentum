@@ -27,8 +27,8 @@ export function EditStatsPage() {
   }, [profile])
 
   const currentActivity = useMemo<ActivityLevel>(() => {
-    const f = profile?.baseline_activity_level
-    return ACTIVITY_LEVELS.find((k) => ACTIVITY_FACTORS[k] === f) ?? 'moderately_active'
+    const f = profile?.baseline_activity_level ?? 0
+    return ACTIVITY_LEVELS.find((k) => Math.abs(ACTIVITY_FACTORS[k] - f) < 1e-6) ?? 'moderately_active'
   }, [profile])
 
   const [weight, setWeight] = useState(() => (latestWeight ? String(u.toWeight(latestWeight.weight_kg)) : ''))
