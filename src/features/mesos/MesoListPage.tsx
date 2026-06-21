@@ -75,7 +75,6 @@ export function MesoListPage() {
                   <span className="font-semibold">{m.name}</span>
                   {m.is_active && <span className="rounded bg-brand-600 px-2 py-0.5 text-[10px] font-semibold text-white">{t('mesos.active')}</span>}
                 </div>
-                <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t(`meso.schedule.${m.scheduling_style}`)}</div>
                 <div className="mt-3 flex flex-wrap gap-2 text-sm">
                   <Link to={`/mesos/${m.id}/edit`} className="rounded-lg bg-white px-3 py-1.5 font-medium dark:bg-[#0f1115]">{t('mesos.edit')}</Link>
                   {!m.is_active && <button disabled={busy} onClick={() => activate(m.id)} className="rounded-lg bg-brand-700 px-3 py-1.5 font-medium text-white hover:bg-brand-800 disabled:opacity-60">{t('mesos.activate')}</button>}
