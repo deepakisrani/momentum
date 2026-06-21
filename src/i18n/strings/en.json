@@ -139,5 +139,13 @@
   "invite.emailPlaceholder": "name@example.com",
   "invite.add": "Add",
   "invite.empty": "No invites yet.",
-  "invite.remove": "Remove invite"
+  "invite.remove": "Remove invite",
+  "install.banner.title": "Install Momentum",
+  "install.banner.body": "Add it to your home screen for full-screen, app-like access.",
+  "install.install": "Install",
+  "install.notNow": "Dismiss",
+  "install.settings": "Install app",
+  "install.installed": "Momentum is installed on this device.",
+  "install.ios.body": "Tap the Share button, then choose “Add to Home Screen.”",
+  "install.unavailable": "Open your browser’s menu and choose “Install” or “Add to Home Screen.”"
 }

@@ -8,6 +8,7 @@ import { resetAccount } from '../../data/accountRepo'
 import { useTheme } from '../../theme/ThemeProvider'
 import type { Units } from '../../domain/types'
 import { InviteModal } from './InviteModal'
+import { useInstall } from '../../pwa/useInstall'
 
 const OWNER_EMAIL = 'd3epak91@gmail.com'
 
@@ -24,6 +25,7 @@ export function SettingsPage() {
   const units: Units = profile?.units_pref ?? 'metric'
   const isOwner = session?.user.email === OWNER_EMAIL
   const [inviteOpen, setInviteOpen] = useState(false)
+  const install = useInstall()
 
   async function onReset() {
     if (!session) return
@@ -91,6 +93,17 @@ export function SettingsPage() {
             </button>
             <span className={`text-sm ${isDark ? 'font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>{t('settings.theme.dark')}</span>
           </div>
+        </section>
+
+        <section className="rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">
+          <h2 className="mb-2 text-sm font-semibold">{t('install.settings')}</h2>
+          {install.isStandalone ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400">{t('install.installed')}</p>
+          ) : install.canPrompt ? (
+            <button onClick={() => void install.promptInstall()} className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800">{t('install.install')}</button>
+          ) : (
+            <p className="text-sm text-slate-500 dark:text-slate-400">{install.isIOS ? t('install.ios.body') : t('install.unavailable')}</p>
+          )}
         </section>
 
         {isOwner && (
