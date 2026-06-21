@@ -122,6 +122,8 @@
   "settings.units.metric": "Metric (kg, cm)",
   "settings.units.imperial": "Imperial (lb, in)",
   "settings.theme": "Theme",
+  "settings.theme.light": "Light",
+  "settings.theme.dark": "Dark",
   "onboarding.units": "Units",
   "mesos.editTitle": "Edit meso",
   "workout.lastWorkout": "Last Workout"

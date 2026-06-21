@@ -3,7 +3,7 @@ import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
 import { useProfileData } from '../profile/useProfileData'
 import { updateProfile } from '../../data/profileRepo'
-import { ThemeToggle } from '../../theme/ThemeToggle'
+import { useTheme } from '../../theme/ThemeProvider'
 import type { Units } from '../../domain/types'
 
 export function SettingsPage() {
@@ -11,6 +11,8 @@ export function SettingsPage() {
   const { session } = useAuth()
   const { profile, reload } = useProfileData()
   const [busy, setBusy] = useState(false)
+  const { theme, toggle } = useTheme()
+  const isDark = theme === 'dark'
   const units: Units = profile?.units_pref ?? 'metric'
 
   async function setUnits(u: Units) {
@@ -48,8 +50,20 @@ export function SettingsPage() {
         </section>
 
         <section className="rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">
-          <h2 className="mb-2 text-sm font-semibold">{t('settings.theme')}</h2>
-          <ThemeToggle />
+          <h2 className="mb-3 text-sm font-semibold">{t('settings.theme')}</h2>
+          <div className="flex items-center gap-3">
+            <span className={`text-sm ${!isDark ? 'font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>{t('settings.theme.light')}</span>
+            <button
+              onClick={toggle}
+              role="switch"
+              aria-checked={isDark}
+              aria-label={t('settings.theme')}
+              className={`relative inline-block h-6 w-11 rounded-full transition-colors ${isDark ? 'bg-brand-600' : 'bg-slate-300'}`}
+            >
+              <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${isDark ? 'left-[22px]' : 'left-0.5'}`} />
+            </button>
+            <span className={`text-sm ${isDark ? 'font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>{t('settings.theme.dark')}</span>
+          </div>
         </section>
       </div>
     </div>
