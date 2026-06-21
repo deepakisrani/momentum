@@ -11,6 +11,7 @@ import { MesoListPage } from './features/mesos/MesoListPage'
 import { MesoBuilderPage } from './features/mesos/MesoBuilderPage'
 import { ActiveWorkoutPage } from './features/session/ActiveWorkoutPage'
 import { SettingsPage } from './features/settings/SettingsPage'
+import { GoalsPage } from './features/profile/GoalsPage'
 
 export default function App() {
   return (
@@ -31,6 +32,7 @@ export default function App() {
                 <Route path="/mesos/:id/edit" element={<RequireOnboarding><MesoBuilderPage /></RequireOnboarding>} />
                 <Route path="/workout" element={<RequireOnboarding><ActiveWorkoutPage /></RequireOnboarding>} />
                 <Route path="/settings" element={<RequireOnboarding><SettingsPage /></RequireOnboarding>} />
+                <Route path="/goals" element={<RequireOnboarding><GoalsPage /></RequireOnboarding>} />
               </Routes>
             </ProfileDataProvider>
           </RequireAuth>
