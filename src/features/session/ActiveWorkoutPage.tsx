@@ -133,7 +133,7 @@ export function ActiveWorkoutPage() {
             <div key={se.id} className="rounded-xl bg-slate-100 dark:bg-[#1b2030]">
               <button onClick={() => setExpanded(open ? null : se.id)} className="flex w-full items-center justify-between p-4 text-left">
                 <span className="font-semibold">{ex?.name ?? '…'}</span>
-                <span className={`text-xs ${status === 'done' ? 'text-emerald-500' : status === 'in_progress' ? 'text-brand-500' : 'text-slate-400'}`}>
+                <span className={`text-xs ${status === 'done' ? 'text-brand-green' : status === 'in_progress' ? 'text-brand-500' : 'text-slate-400'}`}>
                   {se.sets.length}/{target.targetSets} · {t(`workout.status.${status}`)}
                 </span>
               </button>
