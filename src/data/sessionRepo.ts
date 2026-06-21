@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase'
 import type { WorkoutSessionRow, SessionExerciseRow, LoggedSetRow, SetSegmentRow } from './rows'
 import type { SetResult } from '../domain/types'
+import { sessionsSinceLastDeload } from '../domain/scheduling'
 
 export interface SessionExerciseFull extends SessionExerciseRow {
   sets: (LoggedSetRow & { segments: SetSegmentRow[] })[]
@@ -124,6 +125,35 @@ export async function getLastSessionDateByDay(userId: string, mesoId: string): P
     if (r.meso_day_id && !map[r.meso_day_id]) map[r.meso_day_id] = r.started_at
   }
   return map
+}
+
+export interface MesoDayStat {
+  lastDate: string | null
+  sinceLastDeload: number
+}
+
+/** Per meso_day: most recent completed-session date + sessions since the last actual deload. */
+export async function getMesoDayStats(userId: string, mesoId: string): Promise<Record<string, MesoDayStat>> {
+  const { data, error } = await supabase
+    .from('workout_session')
+    .select('meso_day_id, started_at, is_deload')
+    .eq('user_id', userId)
+    .eq('meso_id', mesoId)
+    .eq('status', 'completed')
+    .not('meso_day_id', 'is', null)
+    .order('started_at', { ascending: false })
+  if (error) throw error
+  const byDay: Record<string, { isDeload: boolean }[]> = {}
+  const lastDate: Record<string, string> = {}
+  for (const r of (data ?? []) as { meso_day_id: string; started_at: string; is_deload: boolean }[]) {
+    if (!byDay[r.meso_day_id]) { byDay[r.meso_day_id] = []; lastDate[r.meso_day_id] = r.started_at }
+    byDay[r.meso_day_id].push({ isDeload: r.is_deload })
+  }
+  const out: Record<string, MesoDayStat> = {}
+  for (const dayId of Object.keys(byDay)) {
+    out[dayId] = { lastDate: lastDate[dayId] ?? null, sinceLastDeload: sessionsSinceLastDeload(byDay[dayId]) }
+  }
+  return out
 }
 
 /** Most recent prior COMPLETED session's sets for an exercise (first segment of each set), for "last time" + suggestions. */
