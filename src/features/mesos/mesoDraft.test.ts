@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { blankMeso, draftFromFull, stripIds, validateMeso, moveItem, type MesoFull } from './mesoDraft'
 
 describe('blankMeso', () => {
-  it('starts calendar-week, deload every 5, no days', () => {
-    expect(blankMeso()).toEqual({ name: '', schedulingStyle: 'calendar_week', deloadEveryN: 5, days: [] })
+  it('starts continuous, deload every 5, no days', () => {
+    expect(blankMeso()).toEqual({ name: '', schedulingStyle: 'continuous', deloadEveryN: 5, days: [] })
   })
 })
 

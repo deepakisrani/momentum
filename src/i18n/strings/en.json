@@ -77,7 +77,7 @@
   "meso.schedule": "Scheduling",
   "meso.schedule.calendar_week": "Calendar week",
   "meso.schedule.continuous": "Continuous rotation",
-  "meso.deloadEvery": "Deload every (microcycles)",
+  "meso.deloadEvery": "Deload every N sessions (per day)",
   "meso.deloadNever": "Never",
   "meso.addDay": "Add day",
   "meso.dayLabel": "Day name",
@@ -129,5 +129,7 @@
   "settings.resetConfirm": "This permanently erases all your workouts, mesocycles, and body data, and restarts onboarding. Continue?",
   "onboarding.units": "Units",
   "mesos.editTitle": "Edit meso",
-  "workout.lastWorkout": "Last Workout"
+  "workout.lastWorkout": "Last Workout",
+  "workout.deloadScheduled": "Deload scheduled",
+  "workout.deloadBanner": "Deload scheduled — eased off for this session. Toggle the switch to override."
 }

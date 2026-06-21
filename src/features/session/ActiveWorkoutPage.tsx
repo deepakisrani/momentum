@@ -4,7 +4,8 @@ import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
 import { useProfileData } from '../profile/useProfileData'
 import { getActiveMeso, getMesoFull, getMesoDayTargets } from '../../data/mesoRepo'
-import { getActiveSession, startSession, getSessionFull, endSession, setSessionDeload, addSessionExercise, getLastSessionDateByDay, type SessionFull } from '../../data/sessionRepo'
+import { getActiveSession, startSession, getSessionFull, endSession, setSessionDeload, addSessionExercise, getMesoDayStats, type SessionFull } from '../../data/sessionRepo'
+import { isDeloadDue } from '../../domain/scheduling'
 import { listExercises } from '../../data/exerciseRepo'
 import type { ExerciseRow, MesoRow } from '../../data/rows'
 import type { MesoFull } from '../mesos/mesoDraft'
@@ -30,7 +31,7 @@ export function ActiveWorkoutPage() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [lastDates, setLastDates] = useState<Record<string, string>>({})
+  const [dayStats, setDayStats] = useState<Record<string, { lastDate: string | null; sinceLastDeload: number }>>({})
 
   const loadSession = useCallback(async (id: string) => {
     const f = await getSessionFull(id)
@@ -46,7 +47,7 @@ export function ActiveWorkoutPage() {
         setExMap(Object.fromEntries(exList.map((e) => [e.id, e])))
         if (meso) {
           setMesoFull(await getMesoFull(meso.id))
-          setLastDates(await getLastSessionDateByDay(userId, meso.id))
+          setDayStats(await getMesoDayStats(userId, meso.id))
         }
         if (existing) { setSessionId(existing.id); await loadSession(existing.id) }
       } finally {
@@ -109,16 +110,23 @@ export function ActiveWorkoutPage() {
             <>
               <h1 className="text-2xl font-bold">{activeMeso.name}</h1>
               <ul className="space-y-2">
-                {mesoFull.days.map((d) => (
-                  <li key={d.id}>
-                    <button disabled={busy} onClick={() => start(d.id, false)} className="w-full rounded-lg bg-brand-700 px-4 py-3 text-left font-semibold text-white hover:bg-brand-800 disabled:opacity-60">
-                      <div>{d.label}</div>
-                      {lastDates[d.id] && (
-                        <div className="text-xs font-normal opacity-80">{t('workout.lastWorkout')}: {fmtDate(lastDates[d.id])}</div>
-                      )}
-                    </button>
-                  </li>
-                ))}
+                {mesoFull.days.map((d) => {
+                  const stat = dayStats[d.id]
+                  const deloadDue = isDeloadDue(stat?.sinceLastDeload ?? 0, activeMeso.deload_every_n_microcycles)
+                  return (
+                    <li key={d.id}>
+                      <button disabled={busy} onClick={() => start(d.id, deloadDue)} className="w-full rounded-lg bg-brand-700 px-4 py-3 text-left font-semibold text-white hover:bg-brand-800 disabled:opacity-60">
+                        <div className="flex items-center justify-between gap-2">
+                          <span>{d.label}</span>
+                          {deloadDue && <span className="rounded bg-white px-1.5 py-0.5 text-[10px] font-bold text-brand-700">{t('workout.deloadScheduled')}</span>}
+                        </div>
+                        {stat?.lastDate && (
+                          <div className="text-xs font-normal opacity-80">{t('workout.lastWorkout')}: {fmtDate(stat.lastDate)}</div>
+                        )}
+                      </button>
+                    </li>
+                  )
+                })}
               </ul>
             </>
           )}
@@ -132,6 +140,11 @@ export function ActiveWorkoutPage() {
     <div className="min-h-screen bg-white pb-24 text-slate-900 dark:bg-[#0f1115] dark:text-white">
       <Header startIso={full.session.started_at} isDeload={full.session.is_deload} onEnd={end} onToggleDeload={toggleDeload} busy={busy} />
       <div className="mx-auto max-w-md space-y-3 p-6">
+        {full.session.is_deload && (
+          <div className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-brand-700 dark:bg-[#1b2030] dark:text-brand-400">
+            {t('workout.deloadBanner')}
+          </div>
+        )}
         {full.exercises.map((se) => {
           const ex = exMap[se.exercise_id]
           const target = targets[se.exercise_id] ?? { targetSets: 3, repMin: 8, repMax: 12 }

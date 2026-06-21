@@ -29,7 +29,7 @@ export interface MesoFull {
 }
 
 export function blankMeso(): MesoDraft {
-  return { name: '', schedulingStyle: 'calendar_week', deloadEveryN: 5, days: [] }
+  return { name: '', schedulingStyle: 'continuous', deloadEveryN: 5, days: [] }
 }
 
 export function draftFromFull(full: MesoFull): MesoDraft {

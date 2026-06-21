@@ -5,11 +5,8 @@ import { useT } from '../../i18n/I18nProvider'
 import { getMesoFull, saveMeso, setActiveMeso } from '../../data/mesoRepo'
 import { listExercises } from '../../data/exerciseRepo'
 import type { ExerciseRow } from '../../data/rows'
-import type { SchedulingStyle } from '../../domain/types'
 import { blankMeso, draftFromFull, validateMeso, moveItem, type MesoDraft, type DraftDay } from './mesoDraft'
 import { ExercisePickerSheet } from './ExercisePickerSheet'
-
-const SCHEDULES: SchedulingStyle[] = ['calendar_week', 'continuous']
 
 export function MesoBuilderPage() {
   const t = useT()
@@ -93,12 +90,7 @@ export function MesoBuilderPage() {
         <input className={`${control} w-full text-lg font-bold`} placeholder={t('meso.name')} value={draft.name} onChange={(e) => update((d) => { d.name = e.target.value })} />
 
         <div className="flex gap-2">
-          <label className="flex-1 text-sm">{t('meso.schedule')}
-            <select className={`${control} mt-1 w-full`} value={draft.schedulingStyle} onChange={(e) => update((d) => { d.schedulingStyle = e.target.value as SchedulingStyle })}>
-              {SCHEDULES.map((s) => <option key={s} value={s}>{t(`meso.schedule.${s}`)}</option>)}
-            </select>
-          </label>
-          <label className="flex-1 text-sm">{t('meso.deloadEvery')}
+          <label className="w-full text-sm">{t('meso.deloadEvery')}
             <select className={`${control} mt-1 w-full`} value={draft.deloadEveryN ?? 0} onChange={(e) => update((d) => { d.deloadEveryN = Number(e.target.value) || null })}>
               <option value={0}>{t('meso.deloadNever')}</option>
               {[3, 4, 5, 6, 7, 8].map((n) => <option key={n} value={n}>{n}</option>)}
