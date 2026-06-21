@@ -108,6 +108,24 @@ export async function endSession(sessionId: string): Promise<void> {
   if (error) throw error
 }
 
+/** Most recent completed-session date (started_at ISO) per meso_day_id for a meso. */
+export async function getLastSessionDateByDay(userId: string, mesoId: string): Promise<Record<string, string>> {
+  const { data, error } = await supabase
+    .from('workout_session')
+    .select('meso_day_id, started_at')
+    .eq('user_id', userId)
+    .eq('meso_id', mesoId)
+    .eq('status', 'completed')
+    .not('meso_day_id', 'is', null)
+    .order('started_at', { ascending: false })
+  if (error) throw error
+  const map: Record<string, string> = {}
+  for (const r of (data ?? []) as { meso_day_id: string | null; started_at: string }[]) {
+    if (r.meso_day_id && !map[r.meso_day_id]) map[r.meso_day_id] = r.started_at
+  }
+  return map
+}
+
 /** Most recent prior COMPLETED session's sets for an exercise (first segment of each set), for "last time" + suggestions. */
 export async function getLastPerformance(userId: string, exerciseId: string, excludeSessionId: string): Promise<SetResult[] | null> {
   const { data: ws, error } = await supabase

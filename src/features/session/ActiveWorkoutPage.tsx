@@ -4,7 +4,7 @@ import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
 import { useProfileData } from '../profile/useProfileData'
 import { getActiveMeso, getMesoFull, getMesoDayTargets } from '../../data/mesoRepo'
-import { getActiveSession, startSession, getSessionFull, endSession, setSessionDeload, addSessionExercise, type SessionFull } from '../../data/sessionRepo'
+import { getActiveSession, startSession, getSessionFull, endSession, setSessionDeload, addSessionExercise, getLastSessionDateByDay, type SessionFull } from '../../data/sessionRepo'
 import { listExercises } from '../../data/exerciseRepo'
 import type { ExerciseRow, MesoRow } from '../../data/rows'
 import type { MesoFull } from '../mesos/mesoDraft'
@@ -30,6 +30,7 @@ export function ActiveWorkoutPage() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [lastDates, setLastDates] = useState<Record<string, string>>({})
 
   const loadSession = useCallback(async (id: string) => {
     const f = await getSessionFull(id)
@@ -43,7 +44,10 @@ export function ActiveWorkoutPage() {
         const [meso, exList, existing] = await Promise.all([getActiveMeso(userId), listExercises(), getActiveSession(userId)])
         setActiveMeso(meso)
         setExMap(Object.fromEntries(exList.map((e) => [e.id, e])))
-        if (meso) setMesoFull(await getMesoFull(meso.id))
+        if (meso) {
+          setMesoFull(await getMesoFull(meso.id))
+          setLastDates(await getLastSessionDateByDay(userId, meso.id))
+        }
         if (existing) { setSessionId(existing.id); await loadSession(existing.id) }
       } finally {
         setLoading(false)
@@ -90,6 +94,8 @@ export function ActiveWorkoutPage() {
     }
   }
 
+  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+
   if (loading) return <div className="min-h-screen bg-white p-6 dark:bg-[#0f1115] dark:text-white">{t('common.loading')}</div>
 
   // No active session: show the start chooser.
@@ -97,17 +103,19 @@ export function ActiveWorkoutPage() {
     return (
       <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
         <div className="mx-auto max-w-md space-y-4">
-          <h1 className="text-xl font-bold">{t('workout.start')}</h1>
           {!activeMeso || !mesoFull ? (
             <p className="text-sm text-slate-500 dark:text-slate-400">{t('workout.noActiveMeso')}</p>
           ) : (
             <>
-              <p className="text-sm text-slate-500 dark:text-slate-400">{activeMeso.name} · {t('workout.pickDay')}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{activeMeso.name}</p>
               <ul className="space-y-2">
                 {mesoFull.days.map((d) => (
                   <li key={d.id}>
                     <button disabled={busy} onClick={() => start(d.id, false)} className="w-full rounded-lg bg-brand-700 px-4 py-3 text-left font-semibold text-white hover:bg-brand-800 disabled:opacity-60">
-                      {d.label}
+                      <div>{d.label}</div>
+                      {lastDates[d.id] && (
+                        <div className="text-xs font-normal opacity-80">{t('workout.lastWorkout')}: {fmtDate(lastDates[d.id])}</div>
+                      )}
                     </button>
                   </li>
                 ))}

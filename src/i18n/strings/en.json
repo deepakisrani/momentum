@@ -124,5 +124,6 @@
   "settings.units.imperial": "Imperial (lb, in)",
   "settings.theme": "Theme",
   "onboarding.units": "Units",
-  "mesos.editTitle": "Edit meso"
+  "mesos.editTitle": "Edit meso",
+  "workout.lastWorkout": "Last Workout"
 }
