@@ -74,7 +74,7 @@
   "mesos.copySuffix": " (copy)",
   "nav.mesos": "Mesos",
   "meso.name": "Meso name",
-  "meso.deloadEvery": "Deload every N sessions (per day)",
+  "meso.deloadEvery": "Deload every N sessions",
   "meso.deloadNever": "Never",
   "meso.addDay": "Add day",
   "meso.dayLabel": "Day name",
