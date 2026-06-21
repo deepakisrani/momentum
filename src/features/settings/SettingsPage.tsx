@@ -113,7 +113,7 @@ export function SettingsPage() {
           {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
         </section>
       </div>
-      {inviteOpen && <InviteModal onClose={() => setInviteOpen(false)} />}
+      {inviteOpen && <InviteModal onClose={() => setInviteOpen(false)} ownerEmail={session?.user.email ?? ''} />}
     </div>
   )
 }

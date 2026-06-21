@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useT } from '../../i18n/I18nProvider'
 import { listInvites, addInvite, removeInvite, type InviteRow } from '../../data/inviteRepo'
 
-export function InviteModal({ onClose }: { onClose: () => void }) {
+export function InviteModal({ onClose, ownerEmail }: { onClose: () => void; ownerEmail: string }) {
   const t = useT()
   const [invites, setInvites] = useState<InviteRow[]>([])
   const [email, setEmail] = useState('')
@@ -49,7 +49,7 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
           {invites.map((i) => (
             <li key={i.email} className="flex items-center justify-between rounded-lg bg-slate-100 px-3 py-2 text-sm dark:bg-[#0f1115]">
               <span className="truncate">{i.email}</span>
-              <button onClick={() => remove(i.email)} disabled={busy} aria-label={t('invite.remove')} className="ml-2 shrink-0 text-red-500 disabled:opacity-60">✕</button>
+              <button onClick={() => remove(i.email)} disabled={busy || i.email === ownerEmail} aria-label={t('invite.remove')} className="ml-2 shrink-0 text-red-500 disabled:opacity-30">✕</button>
             </li>
           ))}
         </ul>

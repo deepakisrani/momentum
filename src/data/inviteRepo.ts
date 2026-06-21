@@ -17,6 +17,6 @@ export async function addInvite(email: string): Promise<void> {
 }
 
 export async function removeInvite(email: string): Promise<void> {
-  const { error } = await supabase.from('allowed_emails').delete().eq('email', email)
+  const { error } = await supabase.from('allowed_emails').delete().eq('email', email.trim().toLowerCase())
   if (error) throw error
 }
