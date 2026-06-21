@@ -12,6 +12,7 @@ import { MesoBuilderPage } from './features/mesos/MesoBuilderPage'
 import { ActiveWorkoutPage } from './features/session/ActiveWorkoutPage'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { GoalsPage } from './features/profile/GoalsPage'
+import { EditStatsPage } from './features/profile/EditStatsPage'
 import { AppLayout } from './components/AppLayout'
 
 export default function App() {
@@ -35,6 +36,7 @@ export default function App() {
                   <Route path="/workout" element={<ActiveWorkoutPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/goals" element={<GoalsPage />} />
+                  <Route path="/goals/edit" element={<EditStatsPage />} />
                 </Route>
               </Routes>
             </ProfileDataProvider>
