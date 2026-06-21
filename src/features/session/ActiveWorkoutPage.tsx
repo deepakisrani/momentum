@@ -32,6 +32,7 @@ export function ActiveWorkoutPage() {
   const [busy, setBusy] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [dayStats, setDayStats] = useState<Record<string, { lastDate: string | null; sinceLastDeload: number }>>({})
+  const [toggling, setToggling] = useState(false)
 
   const loadSession = useCallback(async (id: string) => {
     const f = await getSessionFull(id)
@@ -72,13 +73,16 @@ export function ActiveWorkoutPage() {
   }
 
   async function toggleDeload() {
-    if (!full || !sessionId) return
+    if (!full || !sessionId || toggling) return
+    setToggling(true)
     const next = !full.session.is_deload
     try {
       await setSessionDeload(sessionId, next)
       setFull({ ...full, session: { ...full.session, is_deload: next } })
     } catch (err) {
       if (import.meta.env.DEV) console.error('[Workout] toggleDeload failed:', err)
+    } finally {
+      setToggling(false)
     }
   }
 
@@ -189,11 +193,11 @@ function Header({ startIso, isDeload, onEnd, onToggleDeload, busy }: { startIso:
     <div className="bg-gradient-to-r from-brand-700 to-brand-600 p-4 text-white">
       <div className="mx-auto flex max-w-md items-center justify-between">
         <div>
-          <div className="text-xs opacity-85">{t('workout.inProgress')}</div>
+          <div className="text-xs opacity-90">{t('workout.inProgress')}</div>
           <div className="text-2xl font-bold tabular-nums">{elapsed}</div>
         </div>
         <div className="flex items-center gap-4">
-          <button onClick={onToggleDeload} role="switch" aria-checked={isDeload} className="flex items-center gap-2 text-sm font-semibold">
+          <button disabled={busy} onClick={onToggleDeload} role="switch" aria-checked={isDeload} className="flex items-center gap-2 text-sm font-semibold disabled:opacity-60">
             {t('workout.deload')}
             <span className={`relative inline-block h-6 w-11 rounded-full transition-colors ${isDeload ? 'bg-white' : 'bg-white/30'}`}>
               <span className={`absolute top-0.5 h-5 w-5 rounded-full transition-all ${isDeload ? 'left-[22px] bg-brand-700' : 'left-0.5 bg-white'}`} />

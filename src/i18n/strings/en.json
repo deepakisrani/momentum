@@ -128,5 +128,5 @@
   "mesos.editTitle": "Edit meso",
   "workout.lastWorkout": "Last Workout",
   "workout.deloadScheduled": "Deload scheduled",
-  "workout.deloadBanner": "Deload scheduled — eased off for this session. Toggle the switch to override."
+  "workout.deloadBanner": "Deload session — eased off. Toggle the switch to override."
 }
