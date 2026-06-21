@@ -1,4 +1,4 @@
-import type { Sex, Goal, Units, Mechanic, SchedulingStyle } from '../domain/types'
+import type { Sex, Goal, Units, Mechanic } from '../domain/types'
 
 export interface ProfileRow {
   id: string
@@ -39,7 +39,6 @@ export interface MesoRow {
   id: string
   user_id: string
   name: string
-  scheduling_style: SchedulingStyle
   deload_every_n_microcycles: number | null
   is_active: boolean
   notes: string | null

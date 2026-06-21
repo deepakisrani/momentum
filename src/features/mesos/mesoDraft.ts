@@ -1,4 +1,3 @@
-import type { SchedulingStyle } from '../../domain/types'
 import type { MesoRow, MesoDayRow, MesoDayExerciseRow } from '../../data/rows'
 
 export interface DraftExercise {
@@ -18,7 +17,6 @@ export interface DraftDay {
 export interface MesoDraft {
   id?: string
   name: string
-  schedulingStyle: SchedulingStyle
   deloadEveryN: number | null
   days: DraftDay[]
 }
@@ -29,14 +27,13 @@ export interface MesoFull {
 }
 
 export function blankMeso(): MesoDraft {
-  return { name: '', schedulingStyle: 'continuous', deloadEveryN: 5, days: [] }
+  return { name: '', deloadEveryN: 5, days: [] }
 }
 
 export function draftFromFull(full: MesoFull): MesoDraft {
   return {
     id: full.meso.id,
     name: full.meso.name,
-    schedulingStyle: full.meso.scheduling_style,
     deloadEveryN: full.meso.deload_every_n_microcycles,
     days: full.days.map((d) => ({
       id: d.id,
@@ -52,7 +49,6 @@ export function draftFromFull(full: MesoFull): MesoDraft {
 export function stripIds(draft: MesoDraft): MesoDraft {
   return {
     name: draft.name,
-    schedulingStyle: draft.schedulingStyle,
     deloadEveryN: draft.deloadEveryN,
     days: draft.days.map((d) => ({
       label: d.label,

@@ -42,7 +42,6 @@ async function createMeso(userId: string, draft: MesoDraft): Promise<string> {
     .insert({
       user_id: userId,
       name: draft.name,
-      scheduling_style: draft.schedulingStyle,
       deload_every_n_microcycles: draft.deloadEveryN,
       is_active: false,
     })
@@ -77,7 +76,7 @@ async function updateMeso(draft: MesoDraft): Promise<string> {
   const mesoId = draft.id as string
   const { error: ue } = await supabase
     .from('meso')
-    .update({ name: draft.name, scheduling_style: draft.schedulingStyle, deload_every_n_microcycles: draft.deloadEveryN })
+    .update({ name: draft.name, deload_every_n_microcycles: draft.deloadEveryN })
     .eq('id', mesoId)
   if (ue) throw ue
 
