@@ -132,5 +132,12 @@
   "mesos.editTitle": "Edit meso",
   "workout.lastWorkout": "Last Workout",
   "workout.deloadScheduled": "Deload scheduled",
-  "workout.deloadBanner": "Deload session — eased off. Toggle the switch to override."
+  "workout.deloadBanner": "Deload session — eased off. Toggle the switch to override.",
+  "settings.invites": "Invites",
+  "settings.manageInvites": "Manage invites",
+  "invite.title": "Invites",
+  "invite.emailPlaceholder": "name@example.com",
+  "invite.add": "Add",
+  "invite.empty": "No invites yet.",
+  "invite.remove": "Remove invite"
 }

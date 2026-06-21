@@ -7,6 +7,9 @@ import { updateProfile } from '../../data/profileRepo'
 import { resetAccount } from '../../data/accountRepo'
 import { useTheme } from '../../theme/ThemeProvider'
 import type { Units } from '../../domain/types'
+import { InviteModal } from './InviteModal'
+
+const OWNER_EMAIL = 'd3epak91@gmail.com'
 
 export function SettingsPage() {
   const t = useT()
@@ -19,6 +22,8 @@ export function SettingsPage() {
   const { theme, toggle } = useTheme()
   const isDark = theme === 'dark'
   const units: Units = profile?.units_pref ?? 'metric'
+  const isOwner = session?.user.email === OWNER_EMAIL
+  const [inviteOpen, setInviteOpen] = useState(false)
 
   async function onReset() {
     if (!session) return
@@ -88,6 +93,13 @@ export function SettingsPage() {
           </div>
         </section>
 
+        {isOwner && (
+          <section className="rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">
+            <h2 className="mb-2 text-sm font-semibold">{t('settings.invites')}</h2>
+            <button onClick={() => setInviteOpen(true)} className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800">{t('settings.manageInvites')}</button>
+          </section>
+        )}
+
         <section className="rounded-xl border border-red-300 bg-slate-100 p-4 dark:border-red-900/60 dark:bg-[#1b2030]">
           <h2 className="mb-1 text-sm font-semibold text-red-600 dark:text-red-400">{t('settings.resetAccount')}</h2>
           <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">{t('settings.resetNote')}</p>
@@ -101,6 +113,7 @@ export function SettingsPage() {
           {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
         </section>
       </div>
+      {inviteOpen && <InviteModal onClose={() => setInviteOpen(false)} />}
     </div>
   )
 }
