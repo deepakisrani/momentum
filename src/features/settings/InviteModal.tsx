@@ -40,8 +40,8 @@ export function InviteModal({ onClose, ownerEmail }: { onClose: () => void; owne
           <button onClick={onClose} className="text-sm text-slate-500 dark:text-slate-400">{t('exercises.cancel')}</button>
         </div>
         <form onSubmit={add} className="flex gap-2">
-          <input className={field} type="email" inputMode="email" autoComplete="off" placeholder={t('invite.emailPlaceholder')} value={email} onChange={(e) => setEmail(e.target.value)} />
-          <button type="submit" disabled={busy} className="rounded-lg bg-brand-700 px-4 text-sm font-semibold text-white hover:bg-brand-800 disabled:opacity-60">{busy ? t('common.saving') : t('invite.add')}</button>
+          <input className={`${field} min-w-0`} type="email" inputMode="email" autoComplete="off" placeholder={t('invite.emailPlaceholder')} value={email} onChange={(e) => setEmail(e.target.value)} />
+          <button type="submit" disabled={busy} className="shrink-0 whitespace-nowrap rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800 disabled:opacity-60">{busy ? t('common.saving') : t('invite.add')}</button>
         </form>
         {error && <p className="text-sm text-red-500">{error}</p>}
         <ul className="max-h-64 space-y-1 overflow-y-auto">
