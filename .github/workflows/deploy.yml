@@ -28,11 +28,19 @@ jobs:
 
       - run: npm ci
 
+      # Accept the values whether they were added under the Variables OR the
+      # Secrets tab, then fail loudly if either is still empty (a missing value
+      # would otherwise ship a blank white page).
       - name: Build
         env:
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
-        run: npm run build
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY are not set. Add them under Settings → Secrets and variables → Actions (Variables tab)."
+            exit 1
+          fi
+          npm run build
 
       # SPA fallback: GitHub Pages serves 404.html for unknown deep links,
       # so a copy of index.html lets client-side routing handle refreshes.
