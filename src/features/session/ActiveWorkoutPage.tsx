@@ -107,7 +107,7 @@ export function ActiveWorkoutPage() {
             <p className="text-sm text-slate-500 dark:text-slate-400">{t('workout.noActiveMeso')}</p>
           ) : (
             <>
-              <p className="text-sm text-slate-500 dark:text-slate-400">{activeMeso.name}</p>
+              <h1 className="text-2xl font-bold">{activeMeso.name}</h1>
               <ul className="space-y-2">
                 {mesoFull.days.map((d) => (
                   <li key={d.id}>

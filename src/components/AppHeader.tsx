@@ -24,13 +24,13 @@ export function AppHeader() {
   const tk = titleKey(pathname)
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-[#0f1115]/90">
+    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 text-slate-900 backdrop-blur dark:border-slate-800 dark:bg-[#0f1115]/90 dark:text-white">
       <div className="mx-auto grid max-w-md grid-cols-[1fr_auto_1fr] items-center px-6 py-2.5">
         <div className="justify-self-start">
           {isHome ? (
             <Link to="/" aria-label="Home" className="flex items-center"><Wordmark className="h-6" /></Link>
           ) : (
-            <button onClick={() => navigate(-1)} aria-label={t('nav.back')} className="text-2xl leading-none text-slate-500 dark:text-slate-400">←</button>
+            <button onClick={() => navigate(-1)} aria-label={t('nav.back')} className="text-2xl leading-none text-slate-700 dark:text-slate-200">←</button>
           )}
         </div>
         <div className="justify-self-center">

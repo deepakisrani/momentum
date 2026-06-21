@@ -29,8 +29,8 @@ export function AvatarMenu() {
       </button>
       {open && (
         <div className="absolute right-0 z-50 mt-2 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-[#1b2030]">
-          <Link to="/goals" onClick={() => setOpen(false)} className="block px-4 py-2.5 text-sm hover:bg-slate-100 dark:hover:bg-[#0f1115]">{t('nav.goals')}</Link>
-          <Link to="/settings" onClick={() => setOpen(false)} className="block px-4 py-2.5 text-sm hover:bg-slate-100 dark:hover:bg-[#0f1115]">{t('settings.title')}</Link>
+          <Link to="/goals" onClick={() => setOpen(false)} className="block px-4 py-2.5 text-sm text-slate-900 hover:bg-slate-100 dark:text-white dark:hover:bg-[#0f1115]">{t('nav.goals')}</Link>
+          <Link to="/settings" onClick={() => setOpen(false)} className="block px-4 py-2.5 text-sm text-slate-900 hover:bg-slate-100 dark:text-white dark:hover:bg-[#0f1115]">{t('settings.title')}</Link>
           <button onClick={() => signOut()} className="block w-full px-4 py-2.5 text-left text-sm text-red-500 hover:bg-slate-100 dark:hover:bg-[#0f1115]">{t('auth.signOut')}</button>
         </div>
       )}
