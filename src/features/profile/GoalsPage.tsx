@@ -1,27 +1,21 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
 import { useProfileData } from './useProfileData'
 import { useUnits } from './useUnits'
 import { buildEnergySummary } from './energySummary'
 import { addWeight } from '../../data/weightRepo'
-import { addGoal } from '../../data/goalRepo'
 import { todayIso } from './today'
-import type { Goal } from '../../domain/types'
-
-const GOALS: Goal[] = ['cut', 'maintain', 'bulk']
 
 export function GoalsPage() {
   const t = useT()
   const { session } = useAuth()
   const { profile, latestWeight, latestGoal, reload } = useProfileData()
   const u = useUnits()
-  const [weightInput, setWeightInput] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
 
   if (!session || !profile || !latestWeight || !latestGoal || !profile.sex || !profile.date_of_birth || profile.height_cm == null) return null
-  const userId = session.user.id
 
   const summary = buildEnergySummary({
     sex: profile.sex,
@@ -33,58 +27,77 @@ export function GoalsPage() {
     today: new Date(),
   })
 
-  async function logWeight() {
-    if (!weightInput) return
-    setBusy(true); setError(null)
-    try { await addWeight(userId, todayIso(), u.fromWeight(Number(weightInput))); setWeightInput(''); await reload() }
-    catch (err) { if (import.meta.env.DEV) console.error('[Goals] logWeight failed:', err); setError(t('common.error')) }
-    finally { setBusy(false) }
-  }
-  async function changeGoal(goal: Goal) {
-    setBusy(true); setError(null)
-    try { await addGoal(userId, todayIso(), goal); await reload() }
-    catch (err) { if (import.meta.env.DEV) console.error('[Goals] changeGoal failed:', err); setError(t('common.error')) }
-    finally { setBusy(false) }
-  }
-
-  const stat = (label: string, value: string) => (
-    <div className="rounded-xl bg-slate-100 p-4 text-center dark:bg-[#1b2030]">
-      <div className="text-xs uppercase text-slate-500 dark:text-slate-400">{label}</div>
-      <div className="text-2xl font-bold">{value}</div>
+  const row = (label: string, value: string) => (
+    <div className="flex items-center justify-between border-b border-slate-200 py-2.5 last:border-0 dark:border-slate-700/60">
+      <span className="text-sm text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="text-sm font-semibold">{value}</span>
     </div>
   )
 
   return (
     <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
-      <div className="mx-auto max-w-md space-y-6">
-        <div className="grid grid-cols-3 gap-3">
-          {stat(t('dashboard.bmr'), String(summary.bmr))}
-          {stat(t('dashboard.maintenance'), String(Math.round(summary.tdee)))}
-          {stat(t('dashboard.target'), String(summary.target))}
-        </div>
-        <p className="text-center text-xs text-slate-500 dark:text-slate-400">{t('dashboard.kcal')}</p>
-
-        <div className="rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">
-          <div className="mb-2 text-sm">{t('dashboard.currentWeight')}: <b>{u.fmtWeight(latestWeight.weight_kg)}</b></div>
-          <div className="flex gap-2">
-            <input className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-[#0f1115] dark:text-white" type="number" inputMode="decimal" step="0.1" placeholder={u.weightLabel} value={weightInput} onChange={(e) => setWeightInput(e.target.value)} />
-            <button onClick={logWeight} disabled={busy} className="rounded-lg bg-brand-700 px-4 font-semibold text-white hover:bg-brand-800 disabled:opacity-60">{t('dashboard.logWeight')}</button>
-          </div>
+      <div className="mx-auto max-w-md space-y-5">
+        <div className="grid grid-cols-2 gap-3">
+          <button onClick={() => setModalOpen(true)} className="rounded-lg bg-brand-700 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-800">{t('metrics.logWeight')}</button>
+          <Link to="/goals/edit" className="rounded-lg bg-slate-100 px-4 py-3 text-center text-sm font-semibold dark:bg-[#1b2030]">{t('metrics.resetGoal')}</Link>
         </div>
 
         <div className="rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">
-          <div className="mb-2 text-sm">{t('dashboard.currentGoal')}: <b>{t(`goal.${latestGoal.goal}`)}</b></div>
-          <div className="flex gap-2">
-            {GOALS.map((g) => (
-              <button key={g} onClick={() => changeGoal(g)} disabled={busy || g === latestGoal.goal}
-                className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold ${g === latestGoal.goal ? 'bg-brand-600 text-white' : 'bg-white dark:bg-[#0f1115]'}`}>
-                {t(`goal.${g}`)}
-              </button>
-            ))}
-          </div>
+          {row(t('onboarding.sex'), t(`onboarding.${profile.sex}`))}
+          {row(t('onboarding.height'), `${u.toHeight(profile.height_cm)} ${u.heightLabel}`)}
+          {row(t('metrics.weight'), u.fmtWeight(latestWeight.weight_kg))}
+          {row(t('dashboard.bmr'), `${summary.bmr} ${t('dashboard.kcal')}`)}
+          {row(t('dashboard.maintenance'), `${Math.round(summary.tdee)} ${t('dashboard.kcal')}`)}
+          {row(t('dashboard.target'), `${summary.target} ${t('dashboard.kcal')}`)}
+          {row(t('onboarding.goal'), t(`goal.${latestGoal.goal}`))}
         </div>
+      </div>
 
-        {error && <p className="text-center text-sm text-red-500">{error}</p>}
+      {modalOpen && (
+        <LogWeightModal userId={session.user.id} onClose={() => setModalOpen(false)} onSaved={async () => { await reload(); setModalOpen(false) }} />
+      )}
+    </div>
+  )
+}
+
+function LogWeightModal({ userId, onClose, onSaved }: { userId: string; onClose: () => void; onSaved: () => void | Promise<void> }) {
+  const t = useT()
+  const u = useUnits()
+  const [value, setValue] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function save() {
+    if (!value) return
+    setBusy(true); setError(null)
+    try {
+      await addWeight(userId, todayIso(), u.fromWeight(Number(value)))
+      await onSaved()
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[Metrics] logWeight failed:', err)
+      setError(t('common.error'))
+    } finally { setBusy(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onClick={onClose}>
+      <div className="w-full max-w-xs space-y-4 rounded-2xl bg-white p-5 text-slate-900 dark:bg-[#1b2030] dark:text-white" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-bold">{t('metrics.logWeight')}</h2>
+        <input
+          autoFocus
+          type="number"
+          inputMode="decimal"
+          step="0.1"
+          placeholder={u.weightLabel}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-[#0f1115] dark:text-white"
+        />
+        {error && <p className="text-sm text-red-500">{error}</p>}
+        <div className="flex gap-2">
+          <button onClick={onClose} className="flex-1 rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold dark:bg-[#0f1115]">{t('exercises.cancel')}</button>
+          <button onClick={save} disabled={busy} className="flex-1 rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800 disabled:opacity-60">{busy ? t('common.saving') : t('common.save')}</button>
+        </div>
       </div>
     </div>
   )

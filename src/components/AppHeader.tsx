@@ -5,6 +5,7 @@ import { useT } from '../i18n/I18nProvider'
 
 function titleKey(path: string): string | null {
   if (path === '/') return null
+  if (path === '/goals/edit') return 'goals.resetTitle'
   if (path === '/goals') return 'goals.title'
   if (path === '/settings') return 'settings.title'
   if (path === '/exercises') return 'exercises.title'
