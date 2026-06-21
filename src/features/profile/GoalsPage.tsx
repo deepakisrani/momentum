@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
 import { useProfileData } from './useProfileData'
@@ -58,12 +57,6 @@ export function GoalsPage() {
   return (
     <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
       <div className="mx-auto max-w-md space-y-6">
-        <div className="flex items-center justify-between">
-          <Link to="/" className="text-sm text-slate-500 dark:text-slate-400">{t('nav.back')}</Link>
-          <h1 className="text-xl font-bold">{t('goals.title')}</h1>
-          <span className="w-10" />
-        </div>
-
         <div className="grid grid-cols-3 gap-3">
           {stat(t('dashboard.bmr'), String(summary.bmr))}
           {stat(t('dashboard.maintenance'), String(Math.round(summary.tdee)))}

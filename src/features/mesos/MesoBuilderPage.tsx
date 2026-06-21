@@ -90,8 +90,6 @@ export function MesoBuilderPage() {
   return (
     <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
       <div className="mx-auto max-w-md space-y-4">
-        <button onClick={() => navigate('/mesos')} className="text-sm text-slate-500 dark:text-slate-400">{t('nav.back')}</button>
-
         <input className={`${control} w-full text-lg font-bold`} placeholder={t('meso.name')} value={draft.name} onChange={(e) => update((d) => { d.name = e.target.value })} />
 
         <div className="flex gap-2">

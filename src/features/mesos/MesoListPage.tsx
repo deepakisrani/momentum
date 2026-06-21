@@ -58,9 +58,7 @@ export function MesoListPage() {
   return (
     <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
       <div className="mx-auto max-w-md space-y-4">
-        <div className="flex items-center justify-between">
-          <Link to="/" className="text-sm text-slate-500 dark:text-slate-400">{t('nav.back')}</Link>
-          <h1 className="text-xl font-bold">{t('mesos.title')}</h1>
+        <div className="flex justify-end">
           <Link to="/mesos/new" className="rounded-lg bg-brand-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-800">{t('mesos.new')}</Link>
         </div>
 

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
 import { useProfileData } from '../profile/useProfileData'
@@ -28,14 +27,6 @@ export function SettingsPage() {
   return (
     <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
       <div className="mx-auto max-w-md space-y-6">
-        <div className="flex items-center justify-between">
-          <Link to="/" className="text-sm text-slate-500 dark:text-slate-400">
-            {t('nav.back')}
-          </Link>
-          <h1 className="text-xl font-bold">{t('settings.title')}</h1>
-          <span className="w-10" />
-        </div>
-
         <section className="rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">
           <h2 className="mb-2 text-sm font-semibold">{t('settings.units')}</h2>
           <div className="flex gap-2">

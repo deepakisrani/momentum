@@ -123,5 +123,6 @@
   "settings.units.metric": "Metric (kg, cm)",
   "settings.units.imperial": "Imperial (lb, in)",
   "settings.theme": "Theme",
-  "onboarding.units": "Units"
+  "onboarding.units": "Units",
+  "mesos.editTitle": "Edit meso"
 }
