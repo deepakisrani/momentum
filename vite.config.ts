@@ -10,6 +10,9 @@ export default defineConfig(({ command }) => ({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // We register the SW ourselves in main.tsx (periodic update check), so
+      // disable the auto-injected registration to avoid double-registering.
+      injectRegister: null,
       manifest: {
         name: 'Momentum',
         short_name: 'Momentum',
