@@ -14,7 +14,9 @@ export default defineConfig(({ command }) => ({
         name: 'Momentum',
         short_name: 'Momentum',
         theme_color: '#0c6aa6',
-        background_color: '#0f1115',
+        // Splash background — must match the icon's white tile, otherwise the
+        // icon's white square shows as a box on the splash screen.
+        background_color: '#ffffff',
         display: 'standalone',
         // Relative (no leading slash) so they resolve against the manifest's
         // own URL — correct under both the / dev base and the /momentum/ prod base.
