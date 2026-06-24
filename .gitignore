@@ -13,6 +13,11 @@ dist-ssr
 *.local
 .env*.local
 
+# Supabase CLI local files (NOT migrations/ or config.toml — those stay tracked)
+supabase/.temp/
+supabase/.branches/
+supabase/.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
