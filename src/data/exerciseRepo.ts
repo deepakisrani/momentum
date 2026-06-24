@@ -25,3 +25,11 @@ export async function addCustomExercise(userId: string, ex: NewExercise): Promis
   if (error) throw error
   return data as ExerciseRow
 }
+
+/** Exercises keyed by id (planned, custom, swapped, or added), for name display. */
+export async function getExercisesByIds(ids: string[]): Promise<Record<string, ExerciseRow>> {
+  if (!ids.length) return {}
+  const { data, error } = await supabase.from('exercise').select('*').in('id', ids)
+  if (error) throw error
+  return Object.fromEntries(((data ?? []) as ExerciseRow[]).map((e) => [e.id, e]))
+}

@@ -65,7 +65,7 @@ export function EditStatsPage() {
 
   return (
     <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
-      <form onSubmit={save} className="mx-auto max-w-md space-y-4">
+      <form onSubmit={save} className="mx-auto max-w-lg space-y-4">
         <label className="block text-sm">{t('onboarding.weight')} ({u.weightLabel})
           <input className={field} type="number" inputMode="decimal" step="0.1" required value={weight} onChange={(e) => setWeight(e.target.value)} />
         </label>

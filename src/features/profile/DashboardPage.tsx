@@ -34,7 +34,7 @@ export function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
-      <div className="mx-auto max-w-md space-y-6">
+      <div className="mx-auto max-w-4xl space-y-6">
         <InstallBanner />
         <div>
           <h1 className="text-2xl font-bold">{t('home.welcome')}{firstName ? `, ${firstName}` : ''}</h1>
@@ -44,8 +44,12 @@ export function DashboardPage() {
           <Link to="/workout" className={`${card} bg-brand-700 text-center text-white hover:bg-brand-800`}>
             {hasActiveSession ? t('workout.resume') : t('workout.start')}
           </Link>
-          <Link to="/mesos" className={`${card} bg-slate-100 dark:bg-[#1b2030]`}>{t('mesos.title')}</Link>
-          <Link to="/exercises" className={`${card} bg-slate-100 dark:bg-[#1b2030]`}>{t('exercises.title')}</Link>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Link to="/mesos" className={`${card} bg-slate-100 dark:bg-[#1b2030]`}>{t('mesos.title')}</Link>
+            <Link to="/exercises" className={`${card} bg-slate-100 dark:bg-[#1b2030]`}>{t('exercises.title')}</Link>
+            <Link to="/history" className={`${card} bg-slate-100 dark:bg-[#1b2030]`}>{t('history.title')}</Link>
+            <Link to="/progress" className={`${card} bg-slate-100 dark:bg-[#1b2030]`}>{t('progress.title')}</Link>
+          </div>
         </div>
       </div>
     </div>

@@ -57,7 +57,7 @@ export function MesoListPage() {
 
   return (
     <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
-      <div className="mx-auto max-w-md space-y-4">
+      <div className="mx-auto max-w-4xl space-y-4">
         <div className="flex justify-end">
           <Link to="/mesos/new" className="rounded-lg bg-brand-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-800">{t('mesos.new')}</Link>
         </div>
@@ -68,7 +68,7 @@ export function MesoListPage() {
         ) : mesos.length === 0 ? (
           <p className="text-sm text-slate-500 dark:text-slate-400">{t('mesos.empty')}</p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="grid gap-3 sm:grid-cols-2">
             {mesos.map((m) => (
               <li key={m.id} className="rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">
                 <div className="flex items-center justify-between">

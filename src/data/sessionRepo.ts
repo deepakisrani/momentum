@@ -166,3 +166,39 @@ export async function getLastPerformance(userId: string, exerciseId: string, exc
   for (const s of (segs ?? []) as SetSegmentRow[]) bySet[s.logged_set_id] = s
   return lsIds.map((id) => bySet[id]).filter(Boolean).map((s) => ({ weight: s.weight, reps: s.reps, rir: s.rir }))
 }
+
+export interface SessionSummary {
+  id: string
+  meso_day_id: string | null
+  started_at: string
+  ended_at: string | null
+  is_deload: boolean
+  exerciseCount: number
+}
+
+/** Completed sessions for a meso, newest first. Optional same-day filter. */
+export async function listMesoSessions(
+  userId: string,
+  mesoId: string,
+  opts?: { mesoDayId?: string },
+): Promise<SessionSummary[]> {
+  let q = supabase
+    .from('workout_session')
+    .select('id, meso_day_id, started_at, ended_at, is_deload, session_exercise(count)')
+    .eq('user_id', userId)
+    .eq('meso_id', mesoId)
+    .eq('status', 'completed')
+    .order('started_at', { ascending: false })
+  if (opts?.mesoDayId) q = q.eq('meso_day_id', opts.mesoDayId)
+  const { data, error } = await q
+  if (error) throw error
+  type Raw = { id: string; meso_day_id: string | null; started_at: string; ended_at: string | null; is_deload: boolean; session_exercise: { count: number }[] }
+  return ((data ?? []) as Raw[]).map((r) => ({
+    id: r.id,
+    meso_day_id: r.meso_day_id,
+    started_at: r.started_at,
+    ended_at: r.ended_at,
+    is_deload: r.is_deload,
+    exerciseCount: Number(r.session_exercise?.[0]?.count ?? 0),
+  }))
+}

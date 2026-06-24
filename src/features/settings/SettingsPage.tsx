@@ -57,7 +57,7 @@ export function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
-      <div className="mx-auto max-w-md space-y-6">
+      <div className="mx-auto max-w-lg space-y-6">
         <section className="rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">
           <h2 className="mb-2 text-sm font-semibold">{t('settings.units')}</h2>
           <div className="flex gap-2">

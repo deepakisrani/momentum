@@ -13,6 +13,10 @@ function titleKey(path: string): string | null {
   if (path === '/mesos/new') return 'mesos.new'
   if (path.startsWith('/mesos/') && path.endsWith('/edit')) return 'mesos.editTitle'
   if (path === '/workout') return 'nav.workout'
+  if (path === '/history') return 'history.title'
+  if (path.startsWith('/history/')) return 'history.sessionTitle'
+  if (path === '/progress') return 'progress.title'
+  if (path.startsWith('/progress/')) return 'progress.title'
   return null
 }
 
@@ -26,7 +30,7 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 text-slate-900 backdrop-blur dark:border-slate-800 dark:bg-[#0f1115]/90 dark:text-white">
-      <div className="mx-auto grid max-w-md grid-cols-[1fr_auto_1fr] items-center px-6 py-2.5">
+      <div className="mx-auto grid max-w-4xl grid-cols-[1fr_auto_1fr] items-center px-6 py-2.5">
         <div className="justify-self-start">
           {isHome ? (
             <Link to="/" aria-label="Home" className="flex items-center"><Wordmark className="h-6" /></Link>

@@ -1,3 +1,49 @@
+# Bodyweight Trend Graph Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Add a "Weight trend" line chart to the User Metrics screen (`/goals`), reusing the existing `<LineChart>` and `listWeights`, refreshing after a weigh-in is logged.
+
+**Architecture:** Pure wiring — no new repo or domain logic. `GoalsPage` fetches `weightRepo.listWeights`, maps each weigh-in to a chart point, and renders `<LineChart>`. Branch `feat/workout-history`.
+
+**Tech Stack:** Vite + React + TypeScript + Tailwind, Supabase, Vitest. Build: `npm run build`.
+
+---
+
+## Conventions
+- All copy via `useT()`; keys in `src/i18n/strings/en.json`.
+- Weights stored kg, displayed via `useUnits()` (`u.toWeight`, `u.weightLabel`).
+- Components verified via `npm run build` (no new unit tests — `<LineChart>`/`chartScale` are already tested; this is wiring).
+- Reuse: `listWeights` (`src/data/weightRepo.ts`), `WeightLogRow` (`src/data/rows.ts`), `LineChart` (`src/components/charts/LineChart.tsx`), `shortDate` (`src/features/history/historyFormat.ts`).
+
+## File Structure
+- **Modify** `src/i18n/strings/en.json` — two `metrics.*` keys.
+- **Modify** `src/features/profile/GoalsPage.tsx` — fetch weights, render the trend chart, refresh after logging.
+
+---
+
+## Task 1: Bodyweight trend chart on User Metrics
+
+**Files:**
+- Modify: `src/i18n/strings/en.json`
+- Modify: `src/features/profile/GoalsPage.tsx`
+
+- [ ] **Step 1: Add i18n keys**
+
+In `src/i18n/strings/en.json`, the last key is currently `"progress.latest": "Latest"`. Add a comma to it, then insert after it (before the closing `}`):
+
+```json
+  "metrics.weightTrend": "Weight trend",
+  "metrics.notEnoughWeights": "Log a couple more weigh-ins to see a trend."
+```
+
+Verify JSON validity: `node -e "require('./src/i18n/strings/en.json')"` (no error).
+
+- [ ] **Step 2: Rewrite `src/features/profile/GoalsPage.tsx`**
+
+Replace the ENTIRE file with the following. (The `GoalsPage` function gains the weights fetch + chart; the `LogWeightModal` function below it is unchanged from the original — included here so the file is complete.)
+
+```tsx
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
@@ -132,3 +178,42 @@ function LogWeightModal({ userId, onClose, onSaved }: { userId: string; onClose:
     </div>
   )
 }
+```
+
+- [ ] **Step 3: Build**
+
+Run: `npm run build`
+Expected: clean build, no TypeScript errors.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/i18n/strings/en.json src/features/profile/GoalsPage.tsx
+git commit -m "feat(metrics): bodyweight trend chart on User Metrics screen"
+```
+
+---
+
+## Task 2: Final verification
+
+- [ ] **Step 1: Full build**
+
+Run: `npm run build`
+Expected: `✓ built`, `dist/sw.js` generated, no errors.
+
+- [ ] **Step 2: Full test suite**
+
+Run: `npm test`
+Expected: all pass (120 — unchanged; this task adds no tests).
+
+- [ ] **Step 3: Confirm clean tree**
+
+Run: `git status --short`
+Expected: empty.
+
+---
+
+## Notes
+- Hooks (`useState` weights, `useCallback`, `useEffect`) are placed BEFORE the early `return null` guard — required by the Rules of Hooks.
+- `yLabel={u.weightLabel}` gives the chart its accessible name + idle caption (the unit), without duplicating the visible "Weight trend" heading.
+- One weigh-in renders a single dot plus the "not enough for a trend" note; mobile/desktop layout is inherited from the existing `max-w-lg` User Metrics container.

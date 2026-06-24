@@ -45,7 +45,7 @@ export function ExerciseLibraryPage() {
 
   return (
     <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
-      <div className="mx-auto max-w-md space-y-4">
+      <div className="mx-auto max-w-4xl space-y-4">
         <div className="flex justify-end">
           <button onClick={() => setShowAdd((s) => !s)} disabled={loading} className="rounded-lg bg-brand-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-800 disabled:opacity-60">
             {t('exercises.addCustom')}
@@ -89,7 +89,7 @@ export function ExerciseLibraryPage() {
               {t('exercises.countShown').replace('{shown}', String(filtered.length)).replace('{total}', String(all.length))}
             </p>
             {filtered.length === 0 && <p className="text-sm text-slate-500 dark:text-slate-400">{t('exercises.empty')}</p>}
-            <ul className="space-y-2">
+            <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((e) => (
                 <li key={e.id} className="rounded-lg bg-slate-100 p-3 dark:bg-[#1b2030]">
                   <div className="flex items-center justify-between">

@@ -68,7 +68,7 @@ export function OnboardingPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
-      <form onSubmit={onSubmit} className="w-full max-w-sm space-y-4">
+      <form onSubmit={onSubmit} className="w-full max-w-md space-y-4">
         <Wordmark className="mx-auto mb-2 h-9" />
         <h1 className="text-2xl font-bold">{t('onboarding.title')}</h1>
 

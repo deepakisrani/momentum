@@ -13,6 +13,7 @@ import { useElapsed } from './useElapsed'
 import { exerciseStatus } from './sessionFormat'
 import { ExerciseLogPanel } from './ExerciseLogPanel'
 import { ExercisePickerSheet } from '../mesos/ExercisePickerSheet'
+import { PreviousWorkoutPanel } from '../history/PreviousWorkoutPanel'
 
 export function ActiveWorkoutPage() {
   const t = useT()
@@ -31,6 +32,7 @@ export function ActiveWorkoutPage() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [dayStats, setDayStats] = useState<Record<string, { lastDate: string | null; sinceLastDeload: number }>>({})
   const [toggling, setToggling] = useState(false)
 
@@ -107,7 +109,7 @@ export function ActiveWorkoutPage() {
   if (!full) {
     return (
       <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
-        <div className="mx-auto max-w-md space-y-4">
+        <div className="mx-auto max-w-lg space-y-4">
           {!activeMeso || !mesoFull ? (
             <p className="text-sm text-slate-500 dark:text-slate-400">{t('workout.noActiveMeso')}</p>
           ) : (
@@ -140,14 +142,20 @@ export function ActiveWorkoutPage() {
   }
 
   // Active session: overview + per-exercise accordion.
+  const dayLabel = mesoFull?.days.find((d) => d.id === full.session.meso_day_id)?.label ?? ''
   return (
     <div className="min-h-screen bg-white pb-24 text-slate-900 dark:bg-[#0f1115] dark:text-white">
       <Header startIso={full.session.started_at} isDeload={full.session.is_deload} onEnd={end} onToggleDeload={toggleDeload} busy={busy} />
-      <div className="mx-auto max-w-md space-y-3 p-6">
+      <div className="mx-auto max-w-lg space-y-3 p-6">
         {full.session.is_deload && (
           <div className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-brand-700 dark:bg-[#1b2030] dark:text-brand-400">
             {t('workout.deloadBanner')}
           </div>
+        )}
+        {full.session.meso_id && full.session.meso_day_id && (
+          <button onClick={() => setHistoryOpen(true)} className="w-full rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-brand-700 dark:bg-[#1b2030] dark:text-brand-400">
+            {t('workout.previous')}
+          </button>
         )}
         {full.exercises.map((se) => {
           const ex = exMap[se.exercise_id]
@@ -182,6 +190,15 @@ export function ActiveWorkoutPage() {
         </button>
       </div>
       {pickerOpen && <ExercisePickerSheet onPick={addExercise} onClose={() => setPickerOpen(false)} />}
+      {historyOpen && full.session.meso_id && full.session.meso_day_id && (
+        <PreviousWorkoutPanel
+          userId={userId}
+          mesoId={full.session.meso_id}
+          mesoDayId={full.session.meso_day_id}
+          dayLabel={dayLabel}
+          onClose={() => setHistoryOpen(false)}
+        />
+      )}
     </div>
   )
 }
@@ -191,7 +208,7 @@ function Header({ startIso, isDeload, onEnd, onToggleDeload, busy }: { startIso:
   const elapsed = useElapsed(startIso)
   return (
     <div className="bg-gradient-to-r from-brand-700 to-brand-600 p-4 text-white">
-      <div className="mx-auto flex max-w-md items-center justify-between">
+      <div className="mx-auto flex max-w-lg items-center justify-between">
         <div>
           <div className="text-xs opacity-90">{t('workout.inProgress')}</div>
           <div className="text-2xl font-bold tabular-nums">{elapsed}</div>

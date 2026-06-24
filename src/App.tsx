@@ -13,6 +13,10 @@ import { ActiveWorkoutPage } from './features/session/ActiveWorkoutPage'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { GoalsPage } from './features/profile/GoalsPage'
 import { EditStatsPage } from './features/profile/EditStatsPage'
+import { HistoryPage } from './features/history/HistoryPage'
+import { SessionHistoryDetailPage } from './features/history/SessionHistoryDetailPage'
+import { ProgressPage } from './features/progress/ProgressPage'
+import { ExerciseProgressPage } from './features/progress/ExerciseProgressPage'
 import { AppLayout } from './components/AppLayout'
 
 export default function App() {
@@ -37,6 +41,10 @@ export default function App() {
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/goals" element={<GoalsPage />} />
                   <Route path="/goals/edit" element={<EditStatsPage />} />
+                  <Route path="/history" element={<HistoryPage />} />
+                  <Route path="/history/:sessionId" element={<SessionHistoryDetailPage />} />
+                  <Route path="/progress" element={<ProgressPage />} />
+                  <Route path="/progress/:exerciseId" element={<ExerciseProgressPage />} />
                 </Route>
               </Routes>
             </ProfileDataProvider>
