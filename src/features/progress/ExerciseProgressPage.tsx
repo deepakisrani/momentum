@@ -8,6 +8,7 @@ import { getExercisesByIds } from '../../data/exerciseRepo'
 import { getExerciseSetRows } from '../../data/progressRepo'
 import { summarizeSessions, type ProgressionPoint } from '../../domain/progressMetrics'
 import { LineChart } from '../../components/charts/LineChart'
+import { useChartCurve } from '../../prefs/chartPref'
 import { shortDate } from '../history/historyFormat'
 
 type Metric = 'e1rm' | 'volume'
@@ -16,6 +17,7 @@ type Range = 'all' | 'meso'
 export function ExerciseProgressPage() {
   const t = useT()
   const u = useUnits()
+  const curve = useChartCurve()
   const { exerciseId } = useParams<{ exerciseId: string }>()
   const { session } = useAuth()
   const userId = session?.user.id ?? ''
@@ -80,6 +82,7 @@ export function ExerciseProgressPage() {
               formatValue={(v) => `${Math.round(v)} ${u.weightLabel}`}
               formatDate={(ms) => shortDate(new Date(ms).toISOString())}
               yLabel={metric === 'e1rm' ? t('progress.metric.e1rm') : t('progress.metric.volume')}
+              curve={curve}
             />
             {latest && <p className="text-sm text-slate-500 dark:text-slate-400">{t('progress.latest')}: {Math.round(latest.v)} {u.weightLabel}</p>}
             {chartPoints.length < 2 && <p className="text-sm text-slate-500 dark:text-slate-400">{t('progress.notEnoughData')}</p>}

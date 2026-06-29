@@ -8,6 +8,7 @@ import { buildEnergySummary } from './energySummary'
 import { addWeight, listWeights } from '../../data/weightRepo'
 import type { WeightLogRow } from '../../data/rows'
 import { LineChart } from '../../components/charts/LineChart'
+import { useChartCurve } from '../../prefs/chartPref'
 import { shortDate } from '../history/historyFormat'
 import { todayIso } from './today'
 
@@ -16,6 +17,7 @@ export function GoalsPage() {
   const { session } = useAuth()
   const { profile, latestWeight, latestGoal, reload } = useProfileData()
   const u = useUnits()
+  const curve = useChartCurve()
   const [modalOpen, setModalOpen] = useState(false)
   const userId = session?.user.id ?? ''
   const [weights, setWeights] = useState<WeightLogRow[] | null>(null)
@@ -75,6 +77,7 @@ export function GoalsPage() {
               formatValue={(v) => `${v.toFixed(1)} ${u.weightLabel}`}
               formatDate={(ms) => shortDate(new Date(ms).toISOString())}
               yLabel={u.weightLabel}
+              curve={curve}
             />
             {weightPoints.length < 2 && (
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{t('metrics.notEnoughWeights')}</p>

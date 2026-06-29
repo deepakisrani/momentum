@@ -6,6 +6,7 @@ import { useProfileData } from '../profile/useProfileData'
 import { updateProfile } from '../../data/profileRepo'
 import { resetAccount } from '../../data/accountRepo'
 import { useTheme } from '../../theme/ThemeProvider'
+import { useChartCurve, setChartCurve } from '../../prefs/chartPref'
 import type { Units } from '../../domain/types'
 import { InviteModal } from './InviteModal'
 import { useInstall } from '../../pwa/useInstall'
@@ -26,6 +27,8 @@ export function SettingsPage() {
   const isOwner = session?.user.email === OWNER_EMAIL
   const [inviteOpen, setInviteOpen] = useState(false)
   const install = useInstall()
+  const curve = useChartCurve()
+  const isCurved = curve === 'smooth'
 
   async function onReset() {
     if (!session) return
@@ -92,6 +95,23 @@ export function SettingsPage() {
               <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${isDark ? 'left-[22px]' : 'left-0.5'}`} />
             </button>
             <span className={`text-sm ${isDark ? 'font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>{t('settings.theme.dark')}</span>
+          </div>
+        </section>
+
+        <section className="rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">
+          <h2 className="mb-3 text-sm font-semibold">{t('settings.chartLine')}</h2>
+          <div className="flex items-center gap-3">
+            <span className={`text-sm ${!isCurved ? 'font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>{t('settings.chartLine.straight')}</span>
+            <button
+              onClick={() => setChartCurve(isCurved ? 'straight' : 'smooth')}
+              role="switch"
+              aria-checked={isCurved}
+              aria-label={t('settings.chartLine')}
+              className={`relative inline-block h-6 w-11 rounded-full transition-colors ${isCurved ? 'bg-brand-600' : 'bg-slate-300'}`}
+            >
+              <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${isCurved ? 'left-[22px]' : 'left-0.5'}`} />
+            </button>
+            <span className={`text-sm ${isCurved ? 'font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>{t('settings.chartLine.curved')}</span>
           </div>
         </section>
 
