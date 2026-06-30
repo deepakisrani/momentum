@@ -9,6 +9,7 @@ import { addWeight, listWeights } from '../../data/weightRepo'
 import type { WeightLogRow } from '../../data/rows'
 import { LineChart } from '../../components/charts/LineChart'
 import { useChartCurve } from '../../prefs/chartPref'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { shortDate } from '../history/historyFormat'
 import { todayIso } from './today'
 
@@ -96,6 +97,7 @@ export function GoalsPage() {
 function LogWeightModal({ userId, onClose, onSaved }: { userId: string; onClose: () => void; onSaved: () => void | Promise<void> }) {
   const t = useT()
   const u = useUnits()
+  useBodyScrollLock()
   const [value, setValue] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)

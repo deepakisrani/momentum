@@ -1,9 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useT } from '../../i18n/I18nProvider'
 import { listInvites, addInvite, removeInvite, type InviteRow } from '../../data/inviteRepo'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 
 export function InviteModal({ onClose, ownerEmail }: { onClose: () => void; ownerEmail: string }) {
   const t = useT()
+  useBodyScrollLock()
   const [invites, setInvites] = useState<InviteRow[]>([])
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)

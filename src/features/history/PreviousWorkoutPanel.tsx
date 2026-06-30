@@ -4,6 +4,7 @@ import { listMesoSessions, getSessionFull, type SessionSummary, type SessionFull
 import { getExercisesByIds } from '../../data/exerciseRepo'
 import type { ExerciseRow } from '../../data/rows'
 import { SessionDetailView } from './SessionDetailView'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { shortDate, relativeDate, type RelativeDate } from './historyFormat'
 
 function renderRelative(r: RelativeDate, t: (k: string) => string): string {
@@ -23,6 +24,7 @@ export function PreviousWorkoutPanel({ userId, mesoId, mesoDayId, dayLabel, onCl
   onClose: () => void
 }) {
   const t = useT()
+  useBodyScrollLock()
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null)
   const [index, setIndex] = useState(0)
   const [full, setFull] = useState<SessionFull | null>(null)

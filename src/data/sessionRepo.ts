@@ -98,6 +98,12 @@ export async function addSessionExercise(sessionId: string, exerciseId: string, 
   if (error) throw error
 }
 
+/** Removes an exercise from a session (logged sets/segments cascade-delete). */
+export async function removeSessionExercise(sessionExerciseId: string): Promise<void> {
+  const { error } = await supabase.from('session_exercise').delete().eq('id', sessionExerciseId)
+  if (error) throw error
+}
+
 export async function setSessionDeload(sessionId: string, isDeload: boolean): Promise<void> {
   const { error } = await supabase.from('workout_session').update({ is_deload: isDeload }).eq('id', sessionId)
   if (error) throw error

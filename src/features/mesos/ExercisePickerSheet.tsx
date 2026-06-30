@@ -4,10 +4,12 @@ import { useAuth } from '../../auth/useAuth'
 import { listExercises } from '../../data/exerciseRepo'
 import { filterExercises, distinctMuscleGroups, distinctEquipment } from '../exercises/filterExercises'
 import { AddExerciseForm } from '../exercises/AddExerciseForm'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import type { ExerciseRow } from '../../data/rows'
 
 export function ExercisePickerSheet({ onPick, onClose }: { onPick: (ex: ExerciseRow) => void; onClose: () => void }) {
   const t = useT()
+  useBodyScrollLock()
   const { session } = useAuth()
   const userId = session?.user.id ?? ''
   const [all, setAll] = useState<ExerciseRow[]>([])

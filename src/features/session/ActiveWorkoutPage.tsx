@@ -4,7 +4,7 @@ import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
 import { useProfileData } from '../profile/useProfileData'
 import { getActiveMeso, getMesoFull, getMesoDayTargets } from '../../data/mesoRepo'
-import { getActiveSession, startSession, getSessionFull, endSession, setSessionDeload, addSessionExercise, getMesoDayStats, type SessionFull } from '../../data/sessionRepo'
+import { getActiveSession, startSession, getSessionFull, endSession, setSessionDeload, addSessionExercise, removeSessionExercise, getMesoDayStats, type SessionFull } from '../../data/sessionRepo'
 import { isDeloadDue } from '../../domain/scheduling'
 import { listExercises } from '../../data/exerciseRepo'
 import type { ExerciseRow, MesoRow } from '../../data/rows'
@@ -101,6 +101,16 @@ export function ActiveWorkoutPage() {
     }
   }
 
+  async function removeExercise(sessionExerciseId: string) {
+    if (!sessionId) return
+    try {
+      await removeSessionExercise(sessionExerciseId)
+      await loadSession(sessionId)
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[Workout] removeExercise failed:', err)
+    }
+  }
+
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
 
   if (loading) return <div className="min-h-screen bg-white p-6 dark:bg-[#0f1115] dark:text-white">{t('common.loading')}</div>
@@ -164,12 +174,17 @@ export function ActiveWorkoutPage() {
           const open = expanded === se.id
           return (
             <div key={se.id} className="rounded-xl bg-slate-100 dark:bg-[#1b2030]">
-              <button onClick={() => setExpanded(open ? null : se.id)} className="flex w-full items-center justify-between p-4 text-left">
-                <span className="font-semibold">{ex?.name ?? '…'}</span>
-                <span className={`text-xs ${status === 'done' ? 'text-brand-green' : status === 'in_progress' ? 'text-brand-500' : 'text-slate-400'}`}>
-                  {se.sets.length}/{target.targetSets} · {t(`workout.status.${status}`)}
-                </span>
-              </button>
+              <div className="flex items-center">
+                <button onClick={() => setExpanded(open ? null : se.id)} className="flex flex-1 items-center justify-between p-4 text-left">
+                  <span className="font-semibold">{ex?.name ?? '…'}</span>
+                  <span className={`text-xs ${status === 'done' ? 'text-brand-green' : status === 'in_progress' ? 'text-brand-500' : 'text-slate-400'}`}>
+                    {se.sets.length}/{target.targetSets} · {t(`workout.status.${status}`)}
+                  </span>
+                </button>
+                {se.sets.length === 0 && (
+                  <button onClick={() => removeExercise(se.id)} aria-label={t('workout.removeExercise')} className="shrink-0 px-3 text-lg leading-none text-slate-400 hover:text-red-500">✕</button>
+                )}
+              </div>
               {open && (
                 <ExerciseLogPanel
                   userId={userId}
