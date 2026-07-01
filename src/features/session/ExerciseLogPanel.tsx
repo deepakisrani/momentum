@@ -6,6 +6,7 @@ import type { Goal, SetResult } from '../../domain/types'
 import { suggestNextSetOne } from '../../domain/suggestion'
 import { formatLastTime, buildSuggestionInput } from './sessionFormat'
 import { useUnits } from '../profile/useUnits'
+import { useDeloadPct } from '../../prefs/deloadPref'
 
 type Target = { targetSets: number; repMin: number; repMax: number }
 
@@ -23,6 +24,7 @@ export function ExerciseLogPanel({
 }) {
   const t = useT()
   const u = useUnits()
+  const deloadPct = useDeloadPct()
   const [last, setLast] = useState<SetResult[] | null>(null)
   const [weight, setWeight] = useState('')
   const [reps, setReps] = useState('')
@@ -34,9 +36,9 @@ export function ExerciseLogPanel({
   }, [userId, sessionExercise.exercise_id, sessionId])
 
   const suggestion = useMemo(() => {
-    const input = buildSuggestionInput({ last, target: { repMin: target.repMin, repMax: target.repMax }, goal, mechanic: exercise?.mechanic ?? null, isDeload })
+    const input = buildSuggestionInput({ last, target: { repMin: target.repMin, repMax: target.repMax }, goal, mechanic: exercise?.mechanic ?? null, isDeload, deloadFactor: deloadPct / 100 })
     return suggestNextSetOne(input)
-  }, [last, target, goal, exercise, isDeload])
+  }, [last, target, goal, exercise, isDeload, deloadPct])
 
   const completed = sessionExercise.sets
   // Prefill: Set 1 from the suggestion; later sets from the last completed set this session.

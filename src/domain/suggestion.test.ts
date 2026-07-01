@@ -51,6 +51,11 @@ describe('suggestNextSetOne', () => {
     expect(r).toEqual({ weight: 56.5, repTarget: 8, reason: 'deload' })
   })
 
+  it('deload: honors a configured deloadFactor (60% of top set, rounded to 0.5)', () => {
+    const r = suggestNextSetOne({ ...base, isDeload: true, deloadFactor: 0.6, lastSession: sets({ weight: 100, reps: 12, rir: 2 }) })
+    expect(r).toEqual({ weight: 60, repTarget: 8, reason: 'deload' })
+  })
+
   it('uses the heaviest set as the top set', () => {
     const r = suggestNextSetOne({ ...base, goal: 'bulk', lastSession: sets(
       { weight: 50, reps: 12, rir: 3 },

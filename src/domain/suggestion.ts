@@ -25,6 +25,8 @@ export interface SuggestionInput {
    * Omit (or `undefined`) to use the default; `0` is honored as-is (no weight increase).
    */
   increment?: number
+  /** Deload working weight as a fraction of last top set (e.g. 0.6). Defaults to DELOAD_WEIGHT_FACTOR. */
+  deloadFactor?: number
 }
 
 /** Deload working weight is reduced to this fraction. */
@@ -57,7 +59,8 @@ export function suggestNextSetOne(input: SuggestionInput): Suggestion | null {
   const top = topSet(lastSession)
 
   if (isDeload) {
-    return { weight: roundTo(top.weight * DELOAD_WEIGHT_FACTOR, WEIGHT_ROUNDING_STEP_KG), repTarget: repRange.min, reason: 'deload' }
+    const factor = input.deloadFactor ?? DELOAD_WEIGHT_FACTOR
+    return { weight: roundTo(top.weight * factor, WEIGHT_ROUNDING_STEP_KG), repTarget: repRange.min, reason: 'deload' }
   }
 
   const hitTop = top.reps >= repRange.max

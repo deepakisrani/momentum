@@ -7,6 +7,7 @@ import { updateProfile } from '../../data/profileRepo'
 import { resetAccount } from '../../data/accountRepo'
 import { useTheme } from '../../theme/ThemeProvider'
 import { useChartCurve, setChartCurve } from '../../prefs/chartPref'
+import { useDeloadPct, setDeloadPct } from '../../prefs/deloadPref'
 import type { Units } from '../../domain/types'
 import { InviteModal } from './InviteModal'
 import { useInstall } from '../../pwa/useInstall'
@@ -29,6 +30,7 @@ export function SettingsPage() {
   const install = useInstall()
   const curve = useChartCurve()
   const isCurved = curve === 'smooth'
+  const deloadPct = useDeloadPct()
 
   async function onReset() {
     if (!session) return
@@ -112,6 +114,16 @@ export function SettingsPage() {
               <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${isCurved ? 'left-[22px]' : 'left-0.5'}`} />
             </button>
             <span className={`text-sm ${isCurved ? 'font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>{t('settings.chartLine.curved')}</span>
+          </div>
+        </section>
+
+        <section className="rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">
+          <h2 className="mb-1 text-sm font-semibold">{t('settings.deload')}</h2>
+          <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">{t('settings.deloadNote')}</p>
+          <div className="flex items-center gap-4">
+            <button onClick={() => setDeloadPct(deloadPct - 5)} disabled={deloadPct <= 40} aria-label={t('settings.deloadLess')} className="h-9 w-9 rounded-lg bg-white text-lg font-bold leading-none disabled:opacity-40 dark:bg-[#0f1115]">−</button>
+            <span className="min-w-[3ch] text-center text-base font-semibold tabular-nums">{deloadPct}%</span>
+            <button onClick={() => setDeloadPct(deloadPct + 5)} disabled={deloadPct >= 100} aria-label={t('settings.deloadMore')} className="h-9 w-9 rounded-lg bg-white text-lg font-bold leading-none disabled:opacity-40 dark:bg-[#0f1115]">+</button>
           </div>
         </section>
 

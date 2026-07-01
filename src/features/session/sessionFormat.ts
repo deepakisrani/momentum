@@ -25,6 +25,7 @@ export function buildSuggestionInput(args: {
   goal: Goal
   mechanic: Mechanic | null
   isDeload: boolean
+  deloadFactor?: number
 }): SuggestionInput {
   return {
     lastSession: args.last,
@@ -32,5 +33,6 @@ export function buildSuggestionInput(args: {
     goal: args.goal,
     mechanic: args.mechanic,
     isDeload: args.isDeload,
+    deloadFactor: args.deloadFactor,
   }
 }
