@@ -30,6 +30,27 @@ export function ExerciseLogPanel({
   const [reps, setReps] = useState('')
   const [rir, setRir] = useState('')
   const [busy, setBusy] = useState(false)
+  const [saveState, setSaveState] = useState<Record<string, 'saving' | 'saved' | 'error'>>({})
+
+  // Auto-save an edited set (on blur), surfacing saving/saved/error so the write is visible.
+  async function saveSegment(setId: string, seg: { id: string; weight: number; reps: number; rir: number | null }, patch: Partial<{ weight: number; reps: number; rir: number | null }>) {
+    const next = { weight: seg.weight, reps: seg.reps, rir: seg.rir, ...patch }
+    if (next.weight === seg.weight && next.reps === seg.reps && next.rir === seg.rir) return // no-op blur
+    setSaveState((m) => ({ ...m, [setId]: 'saving' }))
+    try {
+      await updateSegment(seg.id, next)
+      setSaveState((m) => ({ ...m, [setId]: 'saved' }))
+      await onChanged()
+      window.setTimeout(() => setSaveState((m) => {
+        if (m[setId] !== 'saved') return m
+        const { [setId]: _, ...rest } = m
+        return rest
+      }), 1500)
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[Workout] updateSegment failed:', err)
+      setSaveState((m) => ({ ...m, [setId]: 'error' }))
+    }
+  }
 
   useEffect(() => {
     getLastPerformance(userId, sessionExercise.exercise_id, sessionId).then(setLast).catch(() => setLast(null))
@@ -81,13 +102,21 @@ export function ExerciseLogPanel({
       <ul className="space-y-1">
         {completed.map((s, i) => {
           const seg = s.segments[0]
+          const st = saveState[s.id]
           return (
-            <li key={s.id} className="grid grid-cols-[24px_1fr_1fr_1fr_28px] items-center gap-2 text-sm">
-              <span className="font-semibold">{i + 1}</span>
-              <input className={numField} defaultValue={seg ? u.toWeight(seg.weight) : ''} onBlur={(e: React.FocusEvent<HTMLInputElement>) => seg && updateSegment(seg.id, { weight: u.fromWeight(Number(e.target.value)), reps: seg.reps, rir: seg.rir }).then(onChanged)} />
-              <input className={numField} defaultValue={seg?.reps} onBlur={(e: React.FocusEvent<HTMLInputElement>) => seg && updateSegment(seg.id, { weight: seg.weight, reps: Number(e.target.value), rir: seg.rir }).then(onChanged)} />
-              <input className={numField} defaultValue={seg?.rir ?? ''} placeholder={t('workout.rir')} onBlur={(e: React.FocusEvent<HTMLInputElement>) => seg && updateSegment(seg.id, { weight: seg.weight, reps: seg.reps, rir: e.target.value === '' ? null : Number(e.target.value) }).then(onChanged)} />
-              <button onClick={() => deleteSet(s.id).then(onChanged)} aria-label={t('workout.deleteSet')} className="text-slate-400">🗑</button>
+            <li key={s.id} className="text-sm">
+              <div className="grid grid-cols-[24px_1fr_1fr_1fr_28px] items-center gap-2">
+                <span className="font-semibold">{i + 1}</span>
+                <input className={numField} defaultValue={seg ? u.toWeight(seg.weight) : ''} onBlur={(e: React.FocusEvent<HTMLInputElement>) => seg && saveSegment(s.id, seg, { weight: u.fromWeight(Number(e.target.value)) })} />
+                <input className={numField} defaultValue={seg?.reps} onBlur={(e: React.FocusEvent<HTMLInputElement>) => seg && saveSegment(s.id, seg, { reps: Number(e.target.value) })} />
+                <input className={numField} defaultValue={seg?.rir ?? ''} placeholder={t('workout.rir')} onBlur={(e: React.FocusEvent<HTMLInputElement>) => seg && saveSegment(s.id, seg, { rir: e.target.value === '' ? null : Number(e.target.value) })} />
+                <button onClick={() => deleteSet(s.id).then(onChanged)} aria-label={t('workout.deleteSet')} className="text-slate-400">✕</button>
+              </div>
+              {st && (
+                <div className={`pl-[32px] pt-0.5 text-xs ${st === 'saved' ? 'text-brand-green' : st === 'error' ? 'text-red-500' : 'text-slate-400'}`}>
+                  {st === 'saving' ? t('workout.saving') : st === 'saved' ? t('workout.saved') : t('workout.saveFailed')}
+                </div>
+              )}
             </li>
           )
         })}
