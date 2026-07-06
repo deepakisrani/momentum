@@ -90,6 +90,8 @@ export function ActiveWorkoutPage() {
 
   async function addExercise(ex: ExerciseRow) {
     if (!sessionId || !full) return
+    // Guard against mis-taps in the picker — confirm before adding an ad-hoc exercise.
+    if (!window.confirm(`${ex.name}\n\n${t('workout.addConfirm')}`)) return
     setExMap((m) => ({ ...m, [ex.id]: ex }))
     try {
       await addSessionExercise(sessionId, ex.id, full.exercises.length, 'added')

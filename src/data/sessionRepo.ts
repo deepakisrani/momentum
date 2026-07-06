@@ -145,13 +145,14 @@ export async function getMesoDayStats(userId: string, mesoId: string): Promise<R
   return out
 }
 
-/** Most recent prior COMPLETED session's sets for an exercise (first segment of each set), for "last time" + suggestions. */
+/** Most recent prior COMPLETED, NON-deload session's sets for an exercise (first segment of each set), for "last time" + suggestions. Deloads are excluded so suggestions build off real working weights. */
 export async function getLastPerformance(userId: string, exerciseId: string, excludeSessionId: string): Promise<SetResult[] | null> {
   const { data: ws, error } = await supabase
     .from('workout_session')
     .select('id, session_exercise!inner(id, exercise_id)')
     .eq('user_id', userId)
     .eq('status', 'completed')
+    .eq('is_deload', false)
     .neq('id', excludeSessionId)
     .eq('session_exercise.exercise_id', exerciseId)
     .order('started_at', { ascending: false })

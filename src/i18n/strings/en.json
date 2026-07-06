@@ -102,6 +102,7 @@
   "workout.inProgress": "Workout in progress",
   "workout.addExercise": "Add exercise",
   "workout.removeExercise": "Remove exercise",
+  "workout.addConfirm": "Add this exercise to the workout?",
   "workout.status.not_started": "Not started",
   "workout.status.in_progress": "In progress",
   "workout.status.done": "Done",
