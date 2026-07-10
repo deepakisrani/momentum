@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
 import { listMesos, setActiveMeso, deleteMeso, getMesoFull, saveMeso } from '../../data/mesoRepo'
 import { draftFromFull, stripIds } from './mesoDraft'
+import { ConfirmModal } from '../../components/ConfirmModal'
 import type { MesoRow } from '../../data/rows'
 
 export function MesoListPage() {
@@ -15,6 +16,7 @@ export function MesoListPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<MesoRow | null>(null)
 
   async function reload() {
     setLoading(true)
@@ -39,7 +41,6 @@ export function MesoListPage() {
   }
 
   async function remove(id: string) {
-    if (!window.confirm(t('mesos.deleteConfirm'))) return
     setBusy(true)
     try { await deleteMeso(id); await reload() } finally { setBusy(false) }
   }
@@ -79,13 +80,24 @@ export function MesoListPage() {
                   <Link to={`/mesos/${m.id}/edit`} className="rounded-lg bg-white px-3 py-1.5 font-medium dark:bg-[#0f1115]">{t('mesos.edit')}</Link>
                   {!m.is_active && <button disabled={busy} onClick={() => activate(m.id)} className="rounded-lg bg-brand-700 px-3 py-1.5 font-medium text-white hover:bg-brand-800 disabled:opacity-60">{t('mesos.activate')}</button>}
                   <button disabled={busy} onClick={() => duplicate(m.id)} className="rounded-lg bg-white px-3 py-1.5 font-medium dark:bg-[#0f1115]">{t('mesos.duplicate')}</button>
-                  <button disabled={busy} onClick={() => remove(m.id)} className="rounded-lg px-3 py-1.5 font-medium text-red-500">{t('mesos.delete')}</button>
+                  <button disabled={busy} onClick={() => setPendingDelete(m)} className="rounded-lg px-3 py-1.5 font-medium text-red-500">{t('mesos.delete')}</button>
                 </div>
               </li>
             ))}
           </ul>
         )}
       </div>
+      {pendingDelete && (
+        <ConfirmModal
+          title={pendingDelete.name}
+          body={t('mesos.deleteConfirm')}
+          confirmLabel={t('mesos.delete')}
+          cancelLabel={t('exercises.cancel')}
+          danger
+          onConfirm={() => { const id = pendingDelete.id; setPendingDelete(null); void remove(id) }}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
     </div>
   )
 }

@@ -8,6 +8,7 @@ import { resetAccount } from '../../data/accountRepo'
 import { useTheme } from '../../theme/ThemeProvider'
 import { useChartCurve, setChartCurve } from '../../prefs/chartPref'
 import { useDeloadPct, setDeloadPct } from '../../prefs/deloadPref'
+import { ConfirmModal } from '../../components/ConfirmModal'
 import type { Units } from '../../domain/types'
 import { InviteModal } from './InviteModal'
 import { useInstall } from '../../pwa/useInstall'
@@ -31,10 +32,11 @@ export function SettingsPage() {
   const curve = useChartCurve()
   const isCurved = curve === 'smooth'
   const deloadPct = useDeloadPct()
+  const [confirmReset, setConfirmReset] = useState(false)
 
   async function onReset() {
     if (!session) return
-    if (!window.confirm(t('settings.resetConfirm'))) return
+    setConfirmReset(false)
     setResetting(true)
     setError(null)
     try {
@@ -150,7 +152,7 @@ export function SettingsPage() {
           <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">{t('settings.resetNote')}</p>
           <button
             disabled={resetting}
-            onClick={onReset}
+            onClick={() => setConfirmReset(true)}
             className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
           >
             {resetting ? t('common.loading') : t('settings.resetAccount')}
@@ -159,6 +161,17 @@ export function SettingsPage() {
         </section>
       </div>
       {inviteOpen && <InviteModal onClose={() => setInviteOpen(false)} ownerEmail={session?.user.email ?? ''} />}
+      {confirmReset && (
+        <ConfirmModal
+          title={t('settings.resetAccount')}
+          body={t('settings.resetConfirm')}
+          confirmLabel={t('settings.resetAccount')}
+          cancelLabel={t('exercises.cancel')}
+          danger
+          onConfirm={onReset}
+          onCancel={() => setConfirmReset(false)}
+        />
+      )}
     </div>
   )
 }
