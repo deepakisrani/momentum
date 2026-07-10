@@ -14,6 +14,7 @@ import { exerciseStatus } from './sessionFormat'
 import { ExerciseLogPanel } from './ExerciseLogPanel'
 import { ExercisePickerSheet } from '../mesos/ExercisePickerSheet'
 import { PreviousWorkoutPanel } from '../history/PreviousWorkoutPanel'
+import { ConfirmModal } from '../../components/ConfirmModal'
 
 export function ActiveWorkoutPage() {
   const t = useT()
@@ -35,6 +36,9 @@ export function ActiveWorkoutPage() {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [dayStats, setDayStats] = useState<Record<string, { lastDate: string | null; sinceLastDeload: number }>>({})
   const [toggling, setToggling] = useState(false)
+  const [pendingAdd, setPendingAdd] = useState<ExerciseRow | null>(null)
+  const [endPrompt, setEndPrompt] = useState(false)
+  const [endPrompted, setEndPrompted] = useState(false)
 
   const loadSession = useCallback(async (id: string) => {
     const f = await getSessionFull(id)
@@ -59,11 +63,22 @@ export function ActiveWorkoutPage() {
     })()
   }, [userId, loadSession])
 
+  // When every exercise has hit all its sets, prompt to end — once per session.
+  // (Zero-set exercises count as not-done, so a deliberately-skipped one won't trigger it.)
+  useEffect(() => {
+    if (!full || !sessionId || endPrompted) return
+    const exs = full.exercises
+    if (exs.length === 0) return
+    const allDone = exs.every((se) => se.sets.length >= (targets[se.exercise_id]?.targetSets ?? 3))
+    if (allDone) { setEndPrompt(true); setEndPrompted(true) }
+  }, [full, targets, sessionId, endPrompted])
+
   async function start(mesoDayId: string, isDeload: boolean) {
     setBusy(true)
     try {
       const id = await startSession(userId, { mesoId: activeMeso?.id ?? null, mesoDayId, isDeload })
       setSessionId(id)
+      setEndPrompted(false)
       await loadSession(id)
     } finally { setBusy(false) }
   }
@@ -90,16 +105,12 @@ export function ActiveWorkoutPage() {
 
   async function addExercise(ex: ExerciseRow) {
     if (!sessionId || !full) return
-    // Guard against mis-taps in the picker — confirm before adding an ad-hoc exercise.
-    if (!window.confirm(`${ex.name}\n\n${t('workout.addConfirm')}`)) return
-    setExMap((m) => ({ ...m, [ex.id]: ex }))
     try {
       await addSessionExercise(sessionId, ex.id, full.exercises.length, 'added')
+      setExMap((m) => ({ ...m, [ex.id]: ex }))
       await loadSession(sessionId)
     } catch (err) {
       if (import.meta.env.DEV) console.error('[Workout] addExercise failed:', err)
-    } finally {
-      setPickerOpen(false)
     }
   }
 
@@ -175,7 +186,12 @@ export function ActiveWorkoutPage() {
           const status = exerciseStatus(target.targetSets, se.sets.length)
           const open = expanded === se.id
           return (
-            <div key={se.id} className="rounded-xl bg-slate-100 dark:bg-[#1b2030]">
+            <div key={se.id} className={`relative overflow-hidden rounded-xl bg-slate-100 dark:bg-[#1b2030] ${status === 'done' ? 'ring-1 ring-brand-green/60' : ''}`}>
+              {status === 'done' && (
+                <div className="animate-done-flash pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-brand-green text-sm font-bold uppercase tracking-wide text-white">
+                  {t('workout.exerciseDone')}
+                </div>
+              )}
               <div className="flex items-center">
                 <button onClick={() => setExpanded(open ? null : se.id)} className="flex flex-1 items-center justify-between p-4 text-left">
                   <span className="font-semibold">{ex?.name ?? '…'}</span>
@@ -206,7 +222,27 @@ export function ActiveWorkoutPage() {
           {t('workout.addExercise')}
         </button>
       </div>
-      {pickerOpen && <ExercisePickerSheet onPick={addExercise} onClose={() => setPickerOpen(false)} />}
+      {pickerOpen && <ExercisePickerSheet onPick={(ex) => { setPickerOpen(false); setPendingAdd(ex) }} onClose={() => setPickerOpen(false)} />}
+      {pendingAdd && (
+        <ConfirmModal
+          title={pendingAdd.name}
+          body={t('workout.addConfirm')}
+          confirmLabel={t('workout.add')}
+          cancelLabel={t('exercises.cancel')}
+          onConfirm={() => { const ex = pendingAdd; setPendingAdd(null); void addExercise(ex) }}
+          onCancel={() => setPendingAdd(null)}
+        />
+      )}
+      {endPrompt && (
+        <ConfirmModal
+          title={t('workout.allSetsDoneTitle')}
+          body={t('workout.allSetsDone')}
+          confirmLabel={t('workout.endWorkout')}
+          cancelLabel={t('workout.keepGoing')}
+          onConfirm={() => { setEndPrompt(false); void end() }}
+          onCancel={() => setEndPrompt(false)}
+        />
+      )}
       {historyOpen && full.session.meso_id && full.session.meso_day_id && (
         <PreviousWorkoutPanel
           userId={userId}
