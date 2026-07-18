@@ -59,11 +59,11 @@ export function NutritionPage() {
           </div>
         </div>
 
-        <div role="radiogroup" aria-label={t('nutrition.title')} className="flex gap-2">
+        <div role="group" aria-label={t('nutrition.title')} className="flex gap-2">
           {(['veg', 'egg', 'nonveg'] as Diet[]).map((d) => {
             const active = diet === d
             return (
-              <button key={d} role="radio" aria-checked={active} aria-label={t(`nutrition.${d}`)} onClick={() => setDiet(d)}
+              <button key={d} aria-pressed={active} aria-label={t(`nutrition.${d}`)} onClick={() => setDiet(d)}
                 className={`flex flex-1 flex-col items-center gap-1 rounded-lg border p-2 ${active ? 'border-slate-400 bg-slate-100 dark:bg-[#1b2030]' : 'border-transparent'}`}>
                 <span className={`flex h-5 w-5 items-center justify-center rounded-sm border-2 ${RING[d]}`}>
                   <span className={`h-2.5 w-2.5 rounded-full ${DOT[d]}`} />

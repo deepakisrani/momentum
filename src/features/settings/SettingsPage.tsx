@@ -143,7 +143,7 @@ export function SettingsPage() {
           <h2 className="mb-1 text-sm font-semibold">{t('settings.protein')}</h2>
           <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">{t('settings.proteinNote')}</p>
           <div className="flex items-center gap-4">
-            <button onClick={() => stepProtein(-1)} aria-label={t('settings.proteinLess')} className="h-9 w-9 rounded-lg bg-white text-lg font-bold leading-none dark:bg-[#0f1115]">−</button>
+            <button onClick={() => stepProtein(-1)} disabled={proteinPerKg == null} aria-label={t('settings.proteinLess')} className="h-9 w-9 rounded-lg bg-white text-lg font-bold leading-none disabled:opacity-40 dark:bg-[#0f1115]">−</button>
             <span className="min-w-[7ch] text-center text-base font-semibold tabular-nums">{proteinPerKg == null ? t('settings.proteinAuto') : `${proteinPerKg.toFixed(1)} g/kg`}</span>
             <button onClick={() => stepProtein(1)} disabled={proteinPerKg != null && proteinPerKg >= 3.0} aria-label={t('settings.proteinMore')} className="h-9 w-9 rounded-lg bg-white text-lg font-bold leading-none disabled:opacity-40 dark:bg-[#0f1115]">+</button>
           </div>
