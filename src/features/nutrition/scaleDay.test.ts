@@ -20,4 +20,18 @@ describe('scaleDay', () => {
     expect(d.meals[0].items[0].qty).toBe(1)
     expect(d.totalCal).toBe(100)
   })
+  it('greedily closes the gap with whole units when rounding alone would fall short', () => {
+    // base 110; factor 250/110≈2.27 rounds both to 2 → 220 (30 short).
+    // Greedy adds the small 10-cal item until the day total hits the target exactly.
+    const t: DayTemplate = {
+      meals: [{ key: 'lunch', items: [
+        { name: 'a', perUnitCal: 100, perUnitProtein: 20, baseQty: 1 },
+        { name: 'b', perUnitCal: 10, perUnitProtein: 1, baseQty: 1 },
+      ] }],
+    }
+    const d = scaleDay(t, 250)
+    expect(d.totalCal).toBe(250)
+    expect(d.meals[0].items[0].qty).toBe(2) // a
+    expect(d.meals[0].items[1].qty).toBe(5) // b
+  })
 })
