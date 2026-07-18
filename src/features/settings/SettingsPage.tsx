@@ -8,6 +8,7 @@ import { resetAccount } from '../../data/accountRepo'
 import { useTheme } from '../../theme/ThemeProvider'
 import { useChartCurve, setChartCurve } from '../../prefs/chartPref'
 import { useDeloadPct, setDeloadPct } from '../../prefs/deloadPref'
+import { useProteinPerKg, setProteinPerKg } from '../../prefs/proteinPref'
 import { ConfirmModal } from '../../components/ConfirmModal'
 import type { Units } from '../../domain/types'
 import { InviteModal } from './InviteModal'
@@ -32,6 +33,15 @@ export function SettingsPage() {
   const curve = useChartCurve()
   const isCurved = curve === 'smooth'
   const deloadPct = useDeloadPct()
+  const proteinPerKg = useProteinPerKg()
+  const stepProtein = (dir: 1 | -1) => {
+    if (proteinPerKg == null) { if (dir === 1) setProteinPerKg(1.6) } // Auto -> 1.6
+    else {
+      const next = Math.round((proteinPerKg + dir * 0.2) * 10) / 10
+      if (next < 1.6) setProteinPerKg(null)           // below floor -> Auto
+      else setProteinPerKg(Math.min(3.0, next))
+    }
+  }
   const [confirmReset, setConfirmReset] = useState(false)
 
   async function onReset() {
@@ -126,6 +136,16 @@ export function SettingsPage() {
             <button onClick={() => setDeloadPct(deloadPct - 5)} disabled={deloadPct <= 40} aria-label={t('settings.deloadLess')} className="h-9 w-9 rounded-lg bg-white text-lg font-bold leading-none disabled:opacity-40 dark:bg-[#0f1115]">−</button>
             <span className="min-w-[3ch] text-center text-base font-semibold tabular-nums">{deloadPct}%</span>
             <button onClick={() => setDeloadPct(deloadPct + 5)} disabled={deloadPct >= 100} aria-label={t('settings.deloadMore')} className="h-9 w-9 rounded-lg bg-white text-lg font-bold leading-none disabled:opacity-40 dark:bg-[#0f1115]">+</button>
+          </div>
+        </section>
+
+        <section className="rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">
+          <h2 className="mb-1 text-sm font-semibold">{t('settings.protein')}</h2>
+          <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">{t('settings.proteinNote')}</p>
+          <div className="flex items-center gap-4">
+            <button onClick={() => stepProtein(-1)} aria-label={t('settings.proteinLess')} className="h-9 w-9 rounded-lg bg-white text-lg font-bold leading-none dark:bg-[#0f1115]">−</button>
+            <span className="min-w-[7ch] text-center text-base font-semibold tabular-nums">{proteinPerKg == null ? t('settings.proteinAuto') : `${proteinPerKg.toFixed(1)} g/kg`}</span>
+            <button onClick={() => stepProtein(1)} disabled={proteinPerKg != null && proteinPerKg >= 3.0} aria-label={t('settings.proteinMore')} className="h-9 w-9 rounded-lg bg-white text-lg font-bold leading-none disabled:opacity-40 dark:bg-[#0f1115]">+</button>
           </div>
         </section>
 
