@@ -23,7 +23,10 @@ export async function listWeights(userId: string): Promise<WeightLogRow[]> {
   return (data ?? []) as WeightLogRow[]
 }
 
+/** One weigh-in per day: re-logging the same day overwrites (needs the weight_log(user_id,logged_on) unique index). */
 export async function addWeight(userId: string, loggedOn: string, weightKg: number): Promise<void> {
-  const { error } = await supabase.from('weight_log').insert({ user_id: userId, logged_on: loggedOn, weight_kg: weightKg })
+  const { error } = await supabase
+    .from('weight_log')
+    .upsert({ user_id: userId, logged_on: loggedOn, weight_kg: weightKg }, { onConflict: 'user_id,logged_on' })
   if (error) throw error
 }

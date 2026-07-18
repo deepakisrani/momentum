@@ -14,7 +14,10 @@ export async function getLatestGoal(userId: string): Promise<GoalLogRow | null> 
   return data as GoalLogRow | null
 }
 
+/** One goal per effective date: re-setting the same day overwrites (needs the goal_log(user_id,effective_from) unique index). */
 export async function addGoal(userId: string, effectiveFrom: string, goal: Goal): Promise<void> {
-  const { error } = await supabase.from('goal_log').insert({ user_id: userId, effective_from: effectiveFrom, goal })
+  const { error } = await supabase
+    .from('goal_log')
+    .upsert({ user_id: userId, effective_from: effectiveFrom, goal }, { onConflict: 'user_id,effective_from' })
   if (error) throw error
 }
