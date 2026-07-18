@@ -4,10 +4,10 @@
 **Context:** A lightweight alternative to the shelved food-logging feature (see `docs/research/2026-06-food-logging-feasibility.md`). No external food DB, no logging, no persistence — just a personalized macro breakdown plus an illustrative day of meals to build from.
 
 ## Goal
-A new **Nutrition** screen: show the user their daily macro targets (from their existing calorie target + bodyweight), and a **sample day** of meals — veg or non-veg — whose portions auto-scale to their target in whole units with honestly-recomputed calories. A baseline to fill in the blanks from, not a tracked plan.
+A new **Nutrition** screen: show the user their daily macro targets (from their existing calorie target + bodyweight), and a **sample day** of meals — veg, egg, or non-veg — whose portions auto-scale to their target in whole units with honestly-recomputed calories. A baseline to fill in the blanks from, not a tracked plan.
 
 ## Scope
-**In:** macro-target math, veg + non-veg sample-day templates, portion auto-scaling, a `/nutrition` screen (dashboard card), a Settings protein-override control.
+**In:** macro-target math, veg / egg / non-veg sample-day templates, portion auto-scaling, a `/nutrition` screen (dashboard card), a Settings protein-override control.
 **Out:** food logging, meal persistence/editing, external food DBs, barcode, saving a plan. Purely computed/illustrative.
 
 ## Architecture
@@ -33,9 +33,10 @@ interface Meal { key: 'breakfast' | 'lunch' | 'snack' | 'dinner'; items: MealIte
 interface DayTemplate { meals: Meal[] } // base day ≈ 2000 kcal
 
 export const VEG_DAY: DayTemplate
+export const EGG_DAY: DayTemplate      // eggetarian — eggs but no meat/fish
 export const NONVEG_DAY: DayTemplate
 ```
-- Indian-friendly, ~4 meals each. Item *names* ("chapati", "katori sabzi", "whey scoop") are **data, not UI chrome** — kept here like the exercise dataset, not in i18n. Meal *labels* (Breakfast/Lunch/…) and all screen text go through i18n.
+- Indian-friendly, ~4 meals each, **three templates** (veg / egg / non-veg). The egg day is essentially the veg day with egg-based protein swapped in (omelette/boiled eggs). Item *names* ("chapati", "katori sabzi", "whey scoop", "2 boiled eggs") are **data, not UI chrome** — kept here like the exercise dataset, not in i18n. Meal *labels* (Breakfast/Lunch/…) and all screen text go through i18n.
 
 ### 3. Scaling — `src/features/nutrition/scaleDay.ts` (pure, tested)
 ```ts
@@ -51,12 +52,12 @@ export function scaleDay(template: DayTemplate, targetCalories: number): ScaledD
 
 ### 4. Preferences — `src/prefs/` (localStorage, like chartPref/deloadPref)
 - `proteinPref.ts`: `number | null` (null = "Auto", derive from goal). `useProteinPerKg()`, `setProteinPerKg()`. Default null.
-- `dietPref.ts`: `'veg' | 'nonveg'`, **default `'veg'`**, remembers last choice. `useDiet()`, `setDiet()`.
+- `dietPref.ts`: `'veg' | 'egg' | 'nonveg'`, **default `'veg'`**, remembers last choice. `useDiet()`, `setDiet()`.
 
 ### 5. Screen — `src/features/nutrition/NutritionPage.tsx` (route `/nutrition`)
 - Guarded like GoalsPage (needs profile sex/dob/height/weight); computes `target` via `buildEnergySummary`, `macros` via `computeMacros(target, weightKg, goal, override ?? undefined)`.
 - **Top:** macro targets — Calories (target), Protein, Carbs, Fat (grams, with kcal secondary), plus a thin stacked split bar (protein/carb/fat by kcal) for at-a-glance proportion.
-- **Diet toggle:** Veg / Non-veg (segmented), backed by `dietPref`.
+- **Diet toggle:** a three-way selector styled as the Indian FSSAI food marks — a filled dot inside a square outline: **green = Veg**, **yellow = Egg**, **red/brown = Non-veg** — with a small text label under each (so selection isn't conveyed by colour alone; each is a `button role="radio"` with an `aria-label`). Selected mark is emphasized (ring/bolder). Backed by `dietPref`.
 - **Meals:** a card per meal — label + each item as "`{qty} {unit} {name} — {cal} cal · {protein} g P`" + a meal subtotal. Then a **day total** line: "Sample ≈ {totalCal} kcal · target {target}". A one-line note: "A sample to build from — swap foods you like, keep portions in the ballpark."
 
 ### 6. Settings — protein override
@@ -67,7 +68,7 @@ A "Protein target" section: a stepper reading **"Auto (from goal)"** by default;
 - `App.tsx`: route under the onboarded/AppLayout group. `AppHeader`: `/nutrition` → `nutrition.title`.
 
 ### i18n keys (`en.json`)
-`nutrition.title`, `nutrition.veg`, `nutrition.nonveg`, `nutrition.calories`, `nutrition.protein`, `nutrition.carbs`, `nutrition.fat`, `nutrition.meal.breakfast|lunch|snack|dinner`, `nutrition.sampleTotal`, `nutrition.sampleNote`, `nutrition.proteinShort` ("P"); plus `settings.protein`, `settings.proteinNote`, `settings.proteinAuto`, `settings.proteinLess`, `settings.proteinMore`.
+`nutrition.title`, `nutrition.veg`, `nutrition.egg`, `nutrition.nonveg`, `nutrition.calories`, `nutrition.protein`, `nutrition.carbs`, `nutrition.fat`, `nutrition.meal.breakfast|lunch|snack|dinner`, `nutrition.sampleTotal`, `nutrition.sampleNote`, `nutrition.proteinShort` ("P"); plus `settings.protein`, `settings.proteinNote`, `settings.proteinAuto`, `settings.proteinLess`, `settings.proteinMore`.
 
 ## Edge cases
 - Carbs clamp to 0 when protein+fat kcal ≥ target (very low target / high bodyweight) — shown as 0 g.
