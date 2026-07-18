@@ -3,7 +3,7 @@ import { useT } from '../../i18n/I18nProvider'
 import { useProfileData } from '../profile/useProfileData'
 import { buildEnergySummary } from '../profile/energySummary'
 import { computeMacros } from '../../domain/macros'
-import { scaleDay } from './scaleDay'
+import { planDay } from './planDay'
 import { VEG_DAY, EGG_DAY, NONVEG_DAY, type DayTemplate } from './sampleDayData'
 import { useProteinPerKg } from '../../prefs/proteinPref'
 import { useDiet, setDiet, type Diet } from '../../prefs/dietPref'
@@ -31,8 +31,9 @@ export function NutritionPage() {
     today: new Date(),
   })
   const macros = computeMacros(target, latestWeight.weight_kg, latestGoal.goal, proteinOverride ?? undefined)
-  const day = scaleDay(TEMPLATES[diet], target)
+  const day = planDay(TEMPLATES[diet], { targetCalories: target, targetProtein: macros.proteinG, goal: latestGoal.goal })
   const totKcal = macros.proteinKcal + macros.carbKcal + macros.fatKcal || 1
+  const dayKcal = day.totalProtein * 4 + day.totalCarbs * 4 + day.totalFat * 9 || 1
 
   const stat = (label: string, grams: number) => (
     <div className="text-center">
@@ -40,6 +41,17 @@ export function NutritionPage() {
       <div className="text-xs text-slate-500 dark:text-slate-400">{label}</div>
     </div>
   )
+
+  const breakupStat = (label: string, grams: number, targetG: number) => {
+    const d = grams - targetG
+    return (
+      <div className="text-center">
+        <div className="text-lg font-bold tabular-nums">{grams}<span className="text-xs font-normal text-slate-500 dark:text-slate-400"> g</span></div>
+        <div className="text-xs text-slate-500 dark:text-slate-400">{label}</div>
+        <div className="text-xs tabular-nums text-slate-400 dark:text-slate-500">{d === 0 ? t('nutrition.onTarget') : `${d > 0 ? '+' : ''}${d} g`}</div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
@@ -74,25 +86,43 @@ export function NutritionPage() {
           })}
         </div>
 
-        {day.meals.map((m) => (
-          <div key={m.key} className="rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">
-            <div className="mb-2 flex items-baseline justify-between">
-              <h2 className="text-sm font-semibold">{t(`nutrition.meal.${m.key}`)}</h2>
-              <span className="text-xs tabular-nums text-slate-500 dark:text-slate-400">{m.cal} {t('dashboard.kcal')} · {m.protein} g {t('nutrition.proteinShort')}</span>
+        {day.meals.map((m) => {
+          const items = m.items.filter((it) => it.qty > 0)
+          if (items.length === 0) return null
+          return (
+            <div key={m.key} className="rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">
+              <div className="mb-2 flex items-baseline justify-between">
+                <h2 className="text-sm font-semibold">{t(`nutrition.meal.${m.key}`)}</h2>
+                <span className="text-xs tabular-nums text-slate-500 dark:text-slate-400">{m.cal} {t('dashboard.kcal')} · {m.protein} g {t('nutrition.proteinShort')}</span>
+              </div>
+              <ul className="space-y-1 text-sm">
+                {items.map((it, i) => (
+                  <li key={i} className="flex justify-between gap-3">
+                    <span>{it.qty} × {it.name}</span>
+                    <span className="shrink-0 tabular-nums text-slate-500 dark:text-slate-400">{it.cal} {t('dashboard.kcal')} · {it.protein} g</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="space-y-1 text-sm">
-              {m.items.map((it, i) => (
-                <li key={i} className="flex justify-between gap-3">
-                  <span>{it.qty} × {it.name}</span>
-                  <span className="shrink-0 tabular-nums text-slate-500 dark:text-slate-400">{it.cal} {t('dashboard.kcal')} · {it.protein} g</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+          )
+        })}
 
-        <div className="text-sm text-slate-500 dark:text-slate-400">
-          {t('nutrition.sampleTotal')}: {day.totalCal} {t('dashboard.kcal')} · {day.totalProtein} g {t('nutrition.proteinShort')} <span className="opacity-70">({t('nutrition.target')} {target})</span>
+        <div className="rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">
+          <div className="mb-1 flex items-baseline justify-between">
+            <div className="text-sm font-semibold">{t('nutrition.breakupTitle')}</div>
+            <div className="text-xs tabular-nums text-slate-500 dark:text-slate-400">{day.totalCal} / {target} {t('dashboard.kcal')}</div>
+          </div>
+          <div className="mb-2 text-xs text-slate-400 dark:text-slate-500">{t('nutrition.vsTarget')}</div>
+          <div className="mb-3 flex h-2 overflow-hidden rounded-full">
+            <div className="bg-brand-700" style={{ width: `${(day.totalProtein * 4 / dayKcal) * 100}%` }} />
+            <div className="bg-brand-400" style={{ width: `${(day.totalCarbs * 4 / dayKcal) * 100}%` }} />
+            <div className="bg-slate-400" style={{ width: `${(day.totalFat * 9 / dayKcal) * 100}%` }} />
+          </div>
+          <div className="grid grid-cols-3">
+            {breakupStat(t('nutrition.protein'), day.totalProtein, macros.proteinG)}
+            {breakupStat(t('nutrition.carbs'), day.totalCarbs, macros.carbG)}
+            {breakupStat(t('nutrition.fat'), day.totalFat, macros.fatG)}
+          </div>
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400">{t('nutrition.sampleNote')}</p>
       </div>

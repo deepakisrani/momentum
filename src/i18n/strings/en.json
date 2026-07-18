@@ -212,7 +212,8 @@
   "nutrition.meal.lunch": "Lunch",
   "nutrition.meal.snack": "Snack",
   "nutrition.meal.dinner": "Dinner",
-  "nutrition.sampleTotal": "Sample day",
-  "nutrition.target": "target",
-  "nutrition.sampleNote": "A sample to build from — swap foods you like, keep the portions in the ballpark."
+  "nutrition.sampleNote": "A sample to build from — swap foods you like, keep the portions in the ballpark.",
+  "nutrition.breakupTitle": "Suggested foods",
+  "nutrition.vsTarget": "grams · vs target",
+  "nutrition.onTarget": "on target"
 }
