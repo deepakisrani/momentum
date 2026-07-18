@@ -17,6 +17,7 @@ import { HistoryPage } from './features/history/HistoryPage'
 import { SessionHistoryDetailPage } from './features/history/SessionHistoryDetailPage'
 import { ProgressPage } from './features/progress/ProgressPage'
 import { ExerciseProgressPage } from './features/progress/ExerciseProgressPage'
+import { NutritionPage } from './features/nutrition/NutritionPage'
 import { AppLayout } from './components/AppLayout'
 
 export default function App() {
@@ -45,6 +46,7 @@ export default function App() {
                   <Route path="/history/:sessionId" element={<SessionHistoryDetailPage />} />
                   <Route path="/progress" element={<ProgressPage />} />
                   <Route path="/progress/:exerciseId" element={<ExerciseProgressPage />} />
+                  <Route path="/nutrition" element={<NutritionPage />} />
                 </Route>
               </Routes>
             </ProfileDataProvider>

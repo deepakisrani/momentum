@@ -193,5 +193,21 @@
   "progress.range.meso": "This meso",
   "progress.latest": "Latest",
   "metrics.weightTrend": "Weight trend",
-  "metrics.notEnoughWeights": "Log a couple more weigh-ins to see a trend."
+  "metrics.notEnoughWeights": "Log a couple more weigh-ins to see a trend.",
+  "nutrition.title": "Nutrition",
+  "nutrition.veg": "Veg",
+  "nutrition.egg": "Egg",
+  "nutrition.nonveg": "Non-veg",
+  "nutrition.calories": "Calories",
+  "nutrition.protein": "Protein",
+  "nutrition.carbs": "Carbs",
+  "nutrition.fat": "Fat",
+  "nutrition.proteinShort": "P",
+  "nutrition.meal.breakfast": "Breakfast",
+  "nutrition.meal.lunch": "Lunch",
+  "nutrition.meal.snack": "Snack",
+  "nutrition.meal.dinner": "Dinner",
+  "nutrition.sampleTotal": "Sample day",
+  "nutrition.target": "target",
+  "nutrition.sampleNote": "A sample to build from — swap foods you like, keep the portions in the ballpark."
 }

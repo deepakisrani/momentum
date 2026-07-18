@@ -49,6 +49,7 @@ export function DashboardPage() {
             <Link to="/exercises" className={`${card} bg-slate-100 dark:bg-[#1b2030]`}>{t('exercises.title')}</Link>
             <Link to="/history" className={`${card} bg-slate-100 dark:bg-[#1b2030]`}>{t('history.title')}</Link>
             <Link to="/progress" className={`${card} bg-slate-100 dark:bg-[#1b2030]`}>{t('progress.title')}</Link>
+            <Link to="/nutrition" className={`${card} bg-slate-100 dark:bg-[#1b2030]`}>{t('nutrition.title')}</Link>
           </div>
         </div>
       </div>
