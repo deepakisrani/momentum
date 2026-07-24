@@ -181,6 +181,8 @@
   "history.older": "Older",
   "history.newer": "Newer",
   "history.deload": "Deload",
+  "history.exportCsv": "Export CSV",
+  "history.exporting": "Exporting…",
   "history.exercises": "exercises",
   "history.noSets": "No sets logged.",
   "history.today": "today",

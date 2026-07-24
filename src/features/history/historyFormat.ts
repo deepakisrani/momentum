@@ -9,6 +9,15 @@ export function shortDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
 }
 
+/** Local calendar date as 'YYYY-MM-DD' (matches what shortDate shows, unlike a
+ * UTC slice of the ISO string). */
+export function localIsoDate(iso: string): string {
+  const d = new Date(iso)
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${mm}-${dd}`
+}
+
 /** Structured relative phrase vs `now`. Component maps kind -> i18n copy. */
 export function relativeDate(iso: string, now: Date): RelativeDate {
   const dayNum = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
