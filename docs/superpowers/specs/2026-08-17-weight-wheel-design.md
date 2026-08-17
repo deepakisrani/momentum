@@ -26,6 +26,9 @@ Confirmed during brainstorming:
    onboarding weight question, and a new dashboard quick-log.
 5. **Storage unchanged:** the wheel works in display units and converts through the
    existing `useUnits().fromWeight` on save; `weight_log.weight_kg` stays kg.
+6. **Also fix** the leading-zero/injected-zero behaviour of the app's controlled number
+   inputs (see "Related fix" below) — reported alongside this work, and it shares the
+   `NumberField` component with the wheel's typed fallback.
 
 ## Approach
 
@@ -96,6 +99,56 @@ units. With no previous weigh-in (onboarding), the anchor defaults to 70 kg / 15
     unit default.
   - Save path is unchanged: `addWeight(userId, todayIso(), u.fromWeight(value))`,
     which already upserts one weigh-in per day.
+
+## Related fix: leading zero in controlled number inputs
+
+Reported alongside this work: deleting the contents of a number field immediately
+fills it with `0`, and typing after that leaves a stuck leading zero (`08`).
+
+**Root cause** (confirmed in `react-dom` `updateWrapper`, `react-dom.development.js`
+lines 1829–1838):
+
+```js
+if (type === 'number') {
+  if (value === 0 && node.value === '' || node.value != value) { // loose !=, deliberate
+    node.value = toString(value);
+  }
+}
+```
+
+The affected fields are target sets / rep min / rep max in `MesoBuilderPage.tsx:136-141`
+— the only controlled `type="number"` inputs in the app holding **numeric** state:
+
+1. Clearing the field gives `Number('') === 0`, so state becomes `0` and the re-render
+   hits the first branch (`value === 0 && node.value === ''`) exactly, and React writes
+   `"0"` into the input. React fills the field; the user did not.
+2. Typing `1` then makes the DOM `"01"` -> `Number("01") === 1` -> state `1` -> on
+   re-render `node.value != value` is `"01" != 1`, which loose equality coerces to
+   `1 != 1` -> false, so React does not rewrite the DOM and the leading zero persists.
+
+Every other numeric input in the app keeps **string** state, which is why only these
+three misbehave. `ExerciseLogPanel.tsx:128` already models the correct pattern
+(`inputMode="decimal"`, no `type="number"`).
+
+**Fix — `src/components/NumberField.tsx`** (shared with the wheel's "type it" fallback):
+
+- `<input type="text" inputMode="numeric" | "decimal">`, which bypasses React's
+  number-input coercion path entirely, rather than fighting it.
+- Props: `{ value: number; onChange: (n: number) => void; min?: number; max?: number; decimal?: boolean; className?: string; ariaLabel?: string }`.
+- Internal string state is authoritative **while focused**, so an empty field stays
+  empty and no zero is injected. It re-syncs from `value` when unfocused.
+- On change: keep the raw text; call `onChange(parsed)` only when the text parses to a
+  finite number. Non-numeric characters are rejected on input.
+- On blur: an empty or unparseable field reverts to the last committed `value`; a valid
+  one is normalized (`"007"` -> `"7"`) and clamped to `min`/`max`.
+- Call sites in this change: the three `MesoBuilderPage` fields and the wheel's typed
+  fallback. The `deloadEveryN` `<select>` at `MesoBuilderPage.tsx:94` is unaffected
+  (a select, not a text input).
+
+**Tests** — `NumberField.test.tsx`: clearing the field leaves it empty and does **not**
+render `0`; typing after clearing shows `8` rather than `08`; a leading zero typed
+directly is normalized on blur; blur on empty reverts to the previous value; `min`/`max`
+clamping on blur; `onChange` fires with parsed numbers and not for partial input.
 
 ## Call sites
 
