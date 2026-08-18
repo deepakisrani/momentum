@@ -229,7 +229,7 @@ export function defaultAnchor(units: Units): number {
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/features/profile/weightWheel.test.ts`
-Expected: PASS — 15 tests.
+Expected: PASS — 16 tests.
 
 - [ ] **Step 5: Commit**
 
@@ -1094,12 +1094,18 @@ git commit -m "feat(onboarding): wheel for the initial weight question"
 - [ ] **Step 1: Run the whole suite**
 
 Run: `npm test`
-Expected: PASS, with no skipped files. Note the total count; `weightWheel` (15), `NumberField` (7), and `WeightWheel` (6) are new.
+Expected: PASS, with no skipped files. Note the total count; `weightWheel` (16), `NumberField` (7), and `WeightWheel` (6) are new.
 
 - [ ] **Step 2: Lint and typecheck**
 
 Run: `npm run lint`
-Expected: no errors.
+Expected: **exactly the pre-existing baseline** — `✖ 9 problems (3 errors, 6 warnings)`. Those 3 errors live on `main` already, in files this plan does not touch:
+
+- `src/auth/RequireAuth.test.tsx:7` — `Unexpected any`
+- `src/features/mesos/MesoListPage.tsx:26` — `'e' is defined but never used`
+- `src/features/session/ExerciseLogPanel.tsx:46` — `'_' is assigned a value but never used`
+
+Any *additional* error or warning is yours to fix. Do **not** fix the three above — they are outside this plan's scope.
 
 Run: `npm run build`
 Expected: completes and writes `dist/`.

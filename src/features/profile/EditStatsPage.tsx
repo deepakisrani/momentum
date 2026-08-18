@@ -8,6 +8,8 @@ import { updateProfile } from '../../data/profileRepo'
 import { addWeight } from '../../data/weightRepo'
 import { addGoal } from '../../data/goalRepo'
 import { todayIso } from './today'
+import { defaultAnchor } from './weightWheel'
+import { WeightWheel } from '../../components/WeightWheel'
 import { ageFromDate, ACTIVITY_FACTORS, type ActivityLevel } from '../../domain/energy'
 import type { Goal } from '../../domain/types'
 
@@ -31,7 +33,12 @@ export function EditStatsPage() {
     return ACTIVITY_LEVELS.find((k) => Math.abs(ACTIVITY_FACTORS[k] - f) < 1e-6) ?? 'moderately_active'
   }, [profile])
 
-  const [weight, setWeight] = useState(() => (latestWeight ? String(u.toWeight(latestWeight.weight_kg)) : ''))
+  // A number in **display** units, like the wheel itself; `u.fromWeight` converts once, at
+  // the `addWeight` call below. The `defaultAnchor` arm is unreachable in practice — this page
+  // sits behind `RequireOnboarding`, which renders nothing until `latestWeight` exists, so the
+  // initialiser never runs without one — but the null check that proves it is below, after the
+  // hooks, so the fallback still has to be a real weight rather than an empty field.
+  const [weight, setWeight] = useState(() => (latestWeight ? u.toWeight(latestWeight.weight_kg) : defaultAnchor(u.units)))
   const [heightVal, setHeightVal] = useState(() => (profile?.height_cm != null ? String(u.toHeight(profile.height_cm)) : ''))
   const [goal, setGoal] = useState<Goal>(latestGoal?.goal ?? 'maintain')
   const [activity, setActivity] = useState<ActivityLevel>(currentActivity)
@@ -49,7 +56,9 @@ export function EditStatsPage() {
       const fields: { baseline_activity_level: number; height_cm?: number } = { baseline_activity_level: ACTIVITY_FACTORS[activity] }
       if (showHeight && heightVal) fields.height_cm = u.fromHeight(Number(heightVal))
       await updateProfile(userId, fields)
-      if (weight) await addWeight(userId, todayIso(), u.fromWeight(Number(weight)))
+      // No `if (weight)` guard and no `Number(...)`: the wheel's value is always a finite
+      // number inside its bounds, so there is no empty case to skip and nothing to coerce.
+      await addWeight(userId, todayIso(), u.fromWeight(weight))
       await addGoal(userId, todayIso(), goal)
       await reload()
       navigate('/goals', { replace: true })
@@ -66,9 +75,23 @@ export function EditStatsPage() {
   return (
     <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
       <form onSubmit={save} className="mx-auto max-w-lg space-y-4">
-        <label className="block text-sm">{t('onboarding.weight')} ({u.weightLabel})
-          <input className={field} type="number" inputMode="decimal" step="0.1" required value={weight} onChange={(e) => setWeight(e.target.value)} />
-        </label>
+        {/* A <div>, not a <label>, and not because of styling: the wheel is a composite widget
+            that names itself through its own `aria-label`, not a single labelable control. A
+            <label> here would have nothing legal to point at — the drum is a div and the typed
+            fallback swaps in and out under it — so it would either name nothing or fight the
+            aria-label for the announced name. The text stays visible for sighted users, and
+            `label` is built from the *same* two pieces so the accessible name is exactly what is
+            on screen — "Current weight (kg)". `metrics.weightWheelLabel` ("Weight") would fail
+            WCAG 2.5.3 (Label in Name) twice over here: no unit, and not even the same noun as
+            the visible text, so a voice-control user saying what they see would miss the field.
+            It stays the right label in the modal, which has no visible field text of its own.
+            No `autoFocus`: unlike the modal (which destroys its own trigger as it opens), this
+            is a page form the user arrived at by navigation, where focus belongs on the document
+            so Tab reaches the fields in order. Grabbing it would also scroll the page to the
+            drum and, for a screen-reader user, skip straight past the heading. */}
+        <div className="block text-sm">{t('onboarding.weight')} ({u.weightLabel})
+          <WeightWheel value={weight} onChange={setWeight} unitLabel={u.weightLabel} label={`${t('onboarding.weight')} (${u.weightLabel})`} />
+        </div>
         {showHeight && (
           <label className="block text-sm">{t('onboarding.height')} ({u.heightLabel})
             <input className={field} type="number" inputMode="decimal" required value={heightVal} onChange={(e) => setHeightVal(e.target.value)} />

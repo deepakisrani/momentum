@@ -590,7 +590,13 @@ Run: `npx tsc -b`
 Expected: no output.
 
 Run: `npm run lint`
-Expected: no errors.
+Expected: **exactly the pre-existing baseline** — `✖ 9 problems (3 errors, 6 warnings)`. Those 3 errors are already on `main`:
+
+- `src/auth/RequireAuth.test.tsx:7` — `Unexpected any`
+- `src/features/mesos/MesoListPage.tsx:26` — `'e' is defined but never used`
+- `src/features/session/ExerciseLogPanel.tsx:46` — `'_' is assigned a value but never used`
+
+Any *additional* error or warning is yours to fix. Do **not** fix the three above — out of scope. Note the third is in `ExerciseLogPanel.tsx`, which Task 8 modifies: leave that line alone.
 
 - [ ] **Step 3: Commit**
 
@@ -860,7 +866,7 @@ Expected: PASS. `noteFormat.test.ts` adds 9 tests.
 - [ ] **Step 2: Lint, typecheck, build**
 
 Run: `npm run lint`
-Expected: no errors.
+Expected: the pre-existing baseline `✖ 9 problems (3 errors, 6 warnings)` and nothing more — see Task 6 Step 2 for the three.
 
 Run: `npm run build`
 Expected: completes and writes `dist/`.

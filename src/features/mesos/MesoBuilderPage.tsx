@@ -7,6 +7,7 @@ import { listExercises } from '../../data/exerciseRepo'
 import type { ExerciseRow } from '../../data/rows'
 import { blankMeso, draftFromFull, validateMeso, moveItem, type MesoDraft, type DraftDay } from './mesoDraft'
 import { ExercisePickerSheet } from './ExercisePickerSheet'
+import { NumberField } from '../../components/NumberField'
 
 export function MesoBuilderPage() {
   const t = useT()
@@ -133,12 +134,14 @@ export function MesoBuilderPage() {
                   </div>
                   <div className="mt-2 flex items-center gap-3 text-sm">
                     <label className="flex items-center gap-1">{t('meso.sets')}
-                      <input className={numField} type="number" min="1" value={ex.targetSets} onChange={(e) => update((d) => { d.days[activeDay].exercises[j].targetSets = Number(e.target.value) })} />
+                      <NumberField className={numField} value={ex.targetSets} min={1} max={20} ariaLabel={t('meso.sets')} onChange={(n) => update((d) => { d.days[activeDay].exercises[j].targetSets = n })} />
                     </label>
                     <label className="flex items-center gap-1">{t('meso.reps')}
-                      <input className={numField} type="number" min="1" value={ex.repMin} onChange={(e) => update((d) => { d.days[activeDay].exercises[j].repMin = Number(e.target.value) })} />
+                      {/* The visible "–" separator is what tells a sighted user which end is
+                          which; it is in neither field's name, so each needs its own. */}
+                      <NumberField className={numField} value={ex.repMin} min={1} max={100} ariaLabel={t('meso.repMin')} onChange={(n) => update((d) => { d.days[activeDay].exercises[j].repMin = n })} />
                       <span>–</span>
-                      <input className={numField} type="number" min="1" value={ex.repMax} onChange={(e) => update((d) => { d.days[activeDay].exercises[j].repMax = Number(e.target.value) })} />
+                      <NumberField className={numField} value={ex.repMax} min={1} max={100} ariaLabel={t('meso.repMax')} onChange={(n) => update((d) => { d.days[activeDay].exercises[j].repMax = n })} />
                     </label>
                   </div>
                 </li>

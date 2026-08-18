@@ -145,6 +145,15 @@ three misbehave. `ExerciseLogPanel.tsx:128` already models the correct pattern
   fallback. The `deloadEveryN` `<select>` at `MesoBuilderPage.tsx:94` is unaffected
   (a select, not a text input).
 
+**Accepted trade-off.** Leaving `type="number"` also gives up what the browser provided
+for free: the desktop spinner arrows, and native ArrowUp/ArrowDown stepping inside the
+field. That loss is inherent — those behaviours are exactly what the number-input code
+path provides, and that code path is the bug. Momentum is phone-first, so the cost falls
+on the least-used surface; but it is a real regression for desktop keyboard users editing
+a meso, and it should be recorded rather than discovered. (The `WeightWheel` does not
+share this loss: its own `role="spinbutton"` container implements arrow and page stepping
+directly.)
+
 **Tests** — `NumberField.test.tsx`: clearing the field leaves it empty and does **not**
 render `0`; typing after clearing shows `8` rather than `08`; a leading zero typed
 directly is normalized on blur; blur on empty reverts to the previous value; `min`/`max`
@@ -170,6 +179,20 @@ clamping on blur; `onChange` fires with parsed numbers and not for partial input
   centred and scrollable. The window follows the value, it does not constrain it.
 - **Unit switch** while a wheel is mounted: `anchor`/`value` are display-unit props,
   so the wheel rebuilds from the converted value; no kg data is touched.
+- **Imperial round-trip drift — measured and accepted.** For an imperial user,
+  `toWeight(kg)` rounds to 0.1 lb and `fromWeight` multiplies back, so opening the modal
+  and saving *without touching the wheel* rewrites the stored kg. Measured across
+  50–150 kg the worst case is **0.0227 kg (22.7 g)**, and it is a **fixed point**: 78 kg
+  becomes 78.01788764 and stays there on every subsequent pass. Every display path rounds
+  to 0.1, so the value shown never changes in either unit.
+
+  This cannot be fixed by skipping the write when the value is untouched: logging the same
+  weight on a *new day* is a legitimate and important action, so the write must always
+  happen. 22 g is two orders of magnitude below real day-to-day variation, and the drift
+  is one-time rather than cumulative. Accepted.
+
+  Note it is new *exposure* rather than a new bug — the old modal opened empty, so a
+  no-op save was impossible; now Save-without-scrolling is one tap.
 - **Same-day re-log:** unchanged behaviour — `addWeight` upserts on
   `(user_id, logged_on)` per `0009`.
 - **Rapid flick past the end:** `valueAtScroll` clamps the index, so overscroll cannot

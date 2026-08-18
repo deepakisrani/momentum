@@ -18,6 +18,7 @@ function titleKey(path: string): string | null {
   if (path === '/progress') return 'progress.title'
   if (path.startsWith('/progress/')) return 'progress.title'
   if (path === '/nutrition') return 'nutrition.title'
+  if (path === '/notes') return 'nav.notes'
   return null
 }
 

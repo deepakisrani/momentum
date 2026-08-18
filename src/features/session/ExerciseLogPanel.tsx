@@ -7,6 +7,7 @@ import { suggestNextSetOne } from '../../domain/suggestion'
 import { formatLastTime, buildSuggestionInput } from './sessionFormat'
 import { useUnits } from '../profile/useUnits'
 import { useDeloadPct } from '../../prefs/deloadPref'
+import { NoteEditorSheet } from '../notes/NoteEditorSheet'
 
 type Target = { targetSets: number; repMin: number; repMax: number }
 
@@ -31,6 +32,7 @@ export function ExerciseLogPanel({
   const [rir, setRir] = useState('')
   const [busy, setBusy] = useState(false)
   const [saveState, setSaveState] = useState<Record<string, 'saving' | 'saved' | 'error'>>({})
+  const [noteOpen, setNoteOpen] = useState(false)
 
   // Auto-save an edited set (on blur), surfacing saving/saved/error so the write is visible.
   async function saveSegment(setId: string, seg: { id: string; weight: number; reps: number; rir: number | null }, patch: Partial<{ weight: number; reps: number; rir: number | null }>) {
@@ -90,6 +92,7 @@ export function ExerciseLogPanel({
   const numField = 'w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-center text-slate-900 dark:border-slate-700 dark:bg-[#0f1115] dark:text-white'
 
   return (
+    <>
     <div className="space-y-3 px-4 pb-4">
       {lastLine && (
         <div className="rounded-lg border-l-2 border-brand-600 bg-white px-3 py-2 text-sm dark:bg-[#0f1115]">
@@ -138,6 +141,30 @@ export function ExerciseLogPanel({
       <button disabled={busy} onClick={logSet} className="w-full rounded-lg bg-brand-700 px-4 py-2 font-semibold text-white hover:bg-brand-800 disabled:opacity-60">
         {t('workout.addSet')}
       </button>
+
+      {/* Write-only: the panel never reads notes back, so its load path is untouched and a
+          note costs this screen nothing until the user asks for one. */}
+      <button
+        type="button"
+        onClick={() => setNoteOpen(true)}
+        className="w-full rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-brand-700 dark:bg-[#1b2030] dark:text-brand-400"
+      >
+        {t('notes.addFromWorkout')}
+      </button>
     </div>
+
+    {/* Outside the space-y root, like every other overlay in this feature: `space-y-3` sets
+        margin-top on each following child, and on a `fixed inset-0` backdrop that pushes the
+        overlay down the viewport and shortens it. */}
+    {noteOpen && (
+      <NoteEditorSheet
+        userId={userId}
+        sessionId={sessionId}
+        initialExerciseIds={[sessionExercise.exercise_id]}
+        onSaved={() => setNoteOpen(false)}
+        onClose={() => setNoteOpen(false)}
+      />
+    )}
+    </>
   )
 }

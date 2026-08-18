@@ -5,13 +5,12 @@ import { useT } from '../../i18n/I18nProvider'
 import { useProfileData } from './useProfileData'
 import { useUnits } from './useUnits'
 import { buildEnergySummary } from './energySummary'
-import { addWeight, listWeights } from '../../data/weightRepo'
+import { listWeights } from '../../data/weightRepo'
 import type { WeightLogRow } from '../../data/rows'
 import { LineChart } from '../../components/charts/LineChart'
 import { useChartCurve } from '../../prefs/chartPref'
-import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { shortDate } from '../history/historyFormat'
-import { todayIso } from './today'
+import { LogWeightModal } from './LogWeightModal'
 
 export function GoalsPage() {
   const t = useT()
@@ -88,52 +87,13 @@ export function GoalsPage() {
       </div>
 
       {modalOpen && (
-        <LogWeightModal userId={session.user.id} onClose={() => setModalOpen(false)} onSaved={async () => { await reload(); loadWeights(); setModalOpen(false) }} />
-      )}
-    </div>
-  )
-}
-
-function LogWeightModal({ userId, onClose, onSaved }: { userId: string; onClose: () => void; onSaved: () => void | Promise<void> }) {
-  const t = useT()
-  const u = useUnits()
-  useBodyScrollLock()
-  const [value, setValue] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function save() {
-    if (!value) return
-    setBusy(true); setError(null)
-    try {
-      await addWeight(userId, todayIso(), u.fromWeight(Number(value)))
-      await onSaved()
-    } catch (err) {
-      if (import.meta.env.DEV) console.error('[Metrics] logWeight failed:', err)
-      setError(t('common.error'))
-    } finally { setBusy(false) }
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onClick={onClose}>
-      <div className="w-full max-w-xs space-y-4 rounded-2xl bg-white p-5 text-slate-900 dark:bg-[#1b2030] dark:text-white" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-bold">{t('metrics.logWeight')}</h2>
-        <input
-          autoFocus
-          type="number"
-          inputMode="decimal"
-          step="0.1"
-          placeholder={u.weightLabel}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-[#0f1115] dark:text-white"
+        <LogWeightModal
+          userId={session.user.id}
+          initialWeight={u.toWeight(latestWeight.weight_kg)}
+          onClose={() => setModalOpen(false)}
+          onSaved={async () => { await reload(); loadWeights(); setModalOpen(false) }}
         />
-        {error && <p className="text-sm text-red-500">{error}</p>}
-        <div className="flex gap-2">
-          <button onClick={onClose} className="flex-1 rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold dark:bg-[#0f1115]">{t('exercises.cancel')}</button>
-          <button onClick={save} disabled={busy} className="flex-1 rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800 disabled:opacity-60">{busy ? t('common.saving') : t('common.save')}</button>
-        </div>
-      </div>
+      )}
     </div>
   )
 }

@@ -10,7 +10,10 @@ import { ACTIVITY_FACTORS, type ActivityLevel } from '../../domain/energy'
 import type { Sex, Goal, Units } from '../../domain/types'
 import { fromInputWeight, fromInputHeight, weightUnitLabel, heightUnitLabel } from './unitsFormat'
 import { todayIso } from './today'
+import { defaultAnchor } from './weightWheel'
+import { rebaseWeightForUnits, rebaseHeightForUnits, HEIGHT_MIN, HEIGHT_MAX } from './rebaseForUnits'
 import { Wordmark } from '../../components/Wordmark'
+import { WeightWheel } from '../../components/WeightWheel'
 
 const ACTIVITY_LEVELS = Object.keys(ACTIVITY_FACTORS) as ActivityLevel[]
 const GOALS: Goal[] = ['cut', 'maintain', 'bulk']
@@ -25,7 +28,11 @@ export function OnboardingPage() {
   const [sex, setSex] = useState<Sex>('male')
   const [dob, setDob] = useState('')
   const [heightCm, setHeightCm] = useState('')
-  const [weightKg, setWeightKg] = useState('')
+  // In **display** units, not kg — hence the rename off the old `weightKg`, which held a
+  // display-unit string too and would now be an outright lie next to a units toggle. The wheel
+  // always has a value, so unlike the input it replaces this question starts pre-filled; a
+  // user who ignores it therefore submits the anchor rather than being stopped by `required`.
+  const [weight, setWeight] = useState(() => defaultAnchor(units))
   const [activity, setActivity] = useState<ActivityLevel>('moderately_active')
   const [goal, setGoal] = useState<Goal>('maintain')
   const [saving, setSaving] = useState(false)
@@ -47,7 +54,7 @@ export function OnboardingPage() {
         baseline_activity_level: ACTIVITY_FACTORS[activity],
         units_pref: units,
       })
-      await addWeight(userId, today, fromInputWeight(Number(weightKg), units))
+      await addWeight(userId, today, fromInputWeight(weight, units))
       await addGoal(userId, today, goal)
       await reload()
       navigate('/', { replace: true })
@@ -59,12 +66,29 @@ export function OnboardingPage() {
     }
   }
 
+  /** Switch unit systems without changing which body the user described.
+   *
+   * Both fields hold numbers in *display* units, so a plain `setUnits` reinterprets them where
+   * they sit: 80 kg read as 80 lb stores 36.3 kg, and 70 in read as 70 cm stores a 70 cm adult.
+   * Convert both instead — see `rebaseForUnits.ts` for why every value is converted rather than
+   * only an untouched default, and for how much damage the height case did unnoticed.
+   *
+   * `units` here is the *previous* system: this closure belongs to the render that was showing
+   * it, and both updaters run before `setUnits` takes effect. Functional updaters rather than
+   * `setWeight(rebase(weight, …))`, so a commit landing in the same batch — the typed fallback
+   * blurring as the picker opens — is rebased instead of discarded. */
+  function changeUnits(next: Units) {
+    setWeight((w) => rebaseWeightForUnits(w, units, next))
+    setHeightCm((h) => rebaseHeightForUnits(h, units, next))
+    setUnits(next)
+  }
+
   const field = 'w-full rounded-lg bg-white px-3 py-2 text-slate-900 dark:bg-[#1b2030] dark:text-white'
 
-  const heightMin = units === 'imperial' ? 20 : 50
-  const heightMax = units === 'imperial' ? 96 : 260
-  const weightMin = units === 'imperial' ? 40 : 20
-  const weightMax = units === 'imperial' ? 900 : 400
+  // Read from the same table the rebase clamps against, so the input cannot declare a range
+  // its own unit switch would land outside of.
+  const heightMin = HEIGHT_MIN[units]
+  const heightMax = HEIGHT_MAX[units]
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
@@ -73,7 +97,7 @@ export function OnboardingPage() {
         <h1 className="text-2xl font-bold">{t('onboarding.title')}</h1>
 
         <label className="block text-sm">{t('onboarding.units')}
-          <select className={field} value={units} onChange={(e) => setUnits(e.target.value as Units)}>
+          <select className={field} value={units} onChange={(e) => changeUnits(e.target.value as Units)}>
             <option value="metric">{t('settings.units.metric')}</option>
             <option value="imperial">{t('settings.units.imperial')}</option>
           </select>
@@ -94,9 +118,21 @@ export function OnboardingPage() {
           <input className={field} type="number" inputMode="decimal" required min={heightMin} max={heightMax} value={heightCm} onChange={(e) => setHeightCm(e.target.value)} />
         </label>
 
-        <label className="block text-sm">{t('onboarding.weight')} ({weightUnitLabel(units)})
-          <input className={field} type="number" inputMode="decimal" required min={weightMin} max={weightMax} step="0.1" value={weightKg} onChange={(e) => setWeightKg(e.target.value)} />
-        </label>
+        {/* A <div>, not a <label>: the wheel is a composite widget that names itself with its
+            own `aria-label`, so there is no single labelable control for a <label> to point at
+            — it would either name nothing or compete with that aria-label. The visible text
+            stays for sighted users, and `label` is built from the same two pieces so the
+            accessible name is exactly what is on screen (WCAG 2.5.3, Label in Name — the
+            wheel's own `metrics.weightWheelLabel` is "Weight", which is neither the visible
+            noun nor unit-qualified). The old input's `min`/`max` are gone with it — the wheel
+            clamps in JS instead — which does shift the imperial range: 20–400 lb in place of
+            40–900. Both ends are far outside a real bodyweight, and the wheel's bounds are
+            deliberately unit-agnostic (see WHEEL_MIN/WHEEL_MAX), so this is left alone here.
+            No `autoFocus` — it is the fifth question here, and grabbing focus on load would
+            drop a keyboard or screen-reader user straight past units, sex, DOB and height. */}
+        <div className="block text-sm">{t('onboarding.weight')} ({weightUnitLabel(units)})
+          <WeightWheel value={weight} onChange={setWeight} unitLabel={weightUnitLabel(units)} label={`${t('onboarding.weight')} (${weightUnitLabel(units)})`} />
+        </div>
 
         <label className="block text-sm">{t('onboarding.activity')}
           <select className={field} value={activity} onChange={(e) => setActivity(e.target.value as ActivityLevel)}>

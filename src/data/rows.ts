@@ -97,3 +97,17 @@ export interface SetSegmentRow {
   reps: number
   rir: number | null
 }
+
+export interface NoteRow {
+  id: string
+  user_id: string
+  body: string
+  session_id: string | null // null = standalone (written outside a workout, or its workout was deleted)
+  created_at: string
+  updated_at: string
+}
+
+export interface NoteExerciseRow {
+  note_id: string
+  exercise_id: string
+}
