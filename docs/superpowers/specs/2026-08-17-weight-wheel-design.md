@@ -174,6 +174,17 @@ clamping on blur; `onChange` fires with parsed numbers and not for partial input
 
 - **No previous weigh-in:** anchor falls back to 70 kg / 154 lb; the typed fallback
   handles someone far from that.
+- **Onboarding requires an explicit interaction.** A wheel always holds a value, so replacing
+  onboarding's `required` empty field with one removed the only thing stopping a user scrolling
+  past the question and submitting the default as their answer. That matters more here than at
+  any other call site: it is the first weight, it feeds BMR across the dashboard, goals and
+  nutrition, and there is no prior value to sanity-check it against. Submit is therefore gated on
+  the user having engaged with the control.
+
+  The gate keys off the user's own gestures (`onPointerDownCapture` / `onKeyDownCapture` on a
+  wrapper), **not** the wheel's `onChange`. A unit switch rebases the value, which glides the
+  drum, and a programmatic scroll commits the rows it passes through — so `onChange` would mark
+  the question answered when the user had only changed kg to lb.
 - **Value outside the window** (e.g. a typed 120 with a 78 anchor): accepted as typed
   (clamped only to the global 20–400 bounds); the wheel re-anchors around it so 120 is
   centred and scrollable. The window follows the value, it does not constrain it.

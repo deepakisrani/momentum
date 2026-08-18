@@ -60,7 +60,7 @@ export function DashboardPage() {
               in place. Full width beside the workout CTA is also what makes it one tap from
               launch, which is the whole point of putting it here rather than only on Goals. */}
           <button type="button" onClick={() => setLogOpen(true)} className={`${card} bg-slate-100 text-center dark:bg-[#1b2030]`}>
-            {t('metrics.logTodaysWeight')}
+            {t('metrics.logWeight')}
           </button>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Link to="/mesos" className={`${card} bg-slate-100 dark:bg-[#1b2030]`}>{t('mesos.title')}</Link>

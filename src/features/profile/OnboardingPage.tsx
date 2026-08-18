@@ -37,12 +37,25 @@ export function OnboardingPage() {
   const [goal, setGoal] = useState<Goal>('maintain')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Whether the user has actually engaged with the weight wheel. Every other required answer
+  // is either empty until filled or a deliberate choice; the wheel is the one control that
+  // arrives holding a plausible-looking number, so without this a user can scroll straight past
+  // the question and submit the default as though it were their answer. That matters more here
+  // than at any other call site: it is the *first* weight, it feeds BMR across the dashboard,
+  // goals and nutrition screens, and there is no prior value to sanity-check it against.
+  //
+  // Keyed off the user's own gestures, NOT the wheel's onChange. A unit switch rebases the
+  // value, which glides the drum, and a programmatic scroll commits the rows it passes through
+  // -- so onChange would mark this touched when the user only changed kg to lb.
+  const [weightTouched, setWeightTouched] = useState(false)
 
   if (!session) return null // never rendered outside RequireAuth; guards the assertion below
   const userId = session.user.id
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
+    // The wheel has no native validity to hook into, so this stands in for `required`.
+    if (!weightTouched) { setError(t('onboarding.confirmWeight')); return }
     setSaving(true)
     setError(null)
     try {
@@ -131,7 +144,12 @@ export function OnboardingPage() {
             No `autoFocus` — it is the fifth question here, and grabbing focus on load would
             drop a keyboard or screen-reader user straight past units, sex, DOB and height. */}
         <div className="block text-sm">{t('onboarding.weight')} ({weightUnitLabel(units)})
-          <WeightWheel value={weight} onChange={setWeight} unitLabel={weightUnitLabel(units)} label={`${t('onboarding.weight')} (${weightUnitLabel(units)})`} />
+          {/* Capture phase, so a gesture anywhere inside the control counts -- dragging the drum,
+              an arrow key, or typing in the "Type value" fallback -- without WeightWheel needing
+              to know this requirement exists. */}
+          <div onPointerDownCapture={() => setWeightTouched(true)} onKeyDownCapture={() => setWeightTouched(true)}>
+            <WeightWheel value={weight} onChange={setWeight} unitLabel={weightUnitLabel(units)} label={`${t('onboarding.weight')} (${weightUnitLabel(units)})`} />
+          </div>
         </div>
 
         <label className="block text-sm">{t('onboarding.activity')}

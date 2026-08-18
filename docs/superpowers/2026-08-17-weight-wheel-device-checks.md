@@ -145,7 +145,16 @@ Open the modal, press on a wheel row, drag out onto the dimmed area, release. Mo
 - **Background:** a drag starting in the card and ending on the backdrop dispatches `click` at their common ancestor — the backdrop — so the card's `stopPropagation` never sees it and the modal closed, discarding the weigh-in. Fixed and regression-tested before merge; the mouse case was reproduced in a real browser, the touch case is the open question (a touch-drag on a scroller is usually swallowed as a scroll).
 - **Same gesture on `ConfirmModal`** (e.g. the delete-note confirmation) still uses the older idiom — pre-existing, worth knowing.
 
-### 17. The original bug
+### 17. Onboarding will not accept the default weight unsupervised
+
+Start onboarding fresh. Fill units, sex, DOB and height, but **do not touch the weight wheel**. Submit.
+
+- **Pass:** it refuses, with "Set your weight on the wheel to continue."
+- **Then the subtle half:** reload, and this time change only the **units** select before submitting. It must *still* refuse — a unit switch rebases the value and glides the drum, and that must not count as answering the question.
+- **Then:** drag the drum (or use "Type value") and submit. It should go through.
+- **Why it exists:** a wheel always holds a plausible-looking number, so it removed the one thing that used to stop someone scrolling past the first weight the app ever records.
+
+### 18. The original bug
 
 Meso builder → select a "sets" or "reps" field's contents → delete.
 
