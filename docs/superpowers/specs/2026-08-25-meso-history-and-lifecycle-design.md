@@ -83,6 +83,27 @@ stated rationale for FK indexes does not apply. Adding one would be cargo-cult.
 Nothing needs to guard the meso builder against a soft-deleted id: it is unreachable from
 the Mesos list, so only a stale URL could reach it, and editing a dead plan harms nothing.
 
+## Part A2 — soft-delete meso days too
+
+**Found during implementation, after the design was approved.** Soft-deleting the *meso* closes
+one door onto orphaned history; editing a meso closes on another. `updateMeso` hard-deletes the
+`meso_day` rows the user removed, and `workout_session.meso_day_id` is `on delete set null`, so
+removing a day permanently strips the day label off every session ever logged on it — those
+sessions then show "—", vanish from the day-filtered "Previous workout" panel, and stop counting
+toward the deload cadence. No deletion of the meso is involved; restructuring a trained meso is
+enough. The comment above that code claims the reconcile "preserves history:
+workout_session.meso_day_id", which is true for kept days and false for removed ones.
+
+Same remedy, one column: `meso_day.deleted_at` (migration `0012`). Removed days are stamped
+rather than deleted. `getMesoFull` — which feeds the builder, the workout-day chooser and
+Duplicate, all of which plan *future* training — filters them out. History reads a new
+`getMesoDayLabels(mesoId)` that deliberately includes them, because naming a past session is
+exactly the case where a removed day still matters.
+
+`meso_day_exercise` stays a hard delete: history reaches an exercise through
+`session_exercise.exercise_id`, never through the plan row, so removing a planned exercise
+destroys no logged data.
+
 ## Part B — History switcher and Unassigned
 
 `listMesoSessions(userId, mesoId, …)` and `getMesoSetRows(userId, mesoId)` widen `mesoId` to
