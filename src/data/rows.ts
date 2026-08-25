@@ -43,6 +43,8 @@ export interface MesoRow {
   is_active: boolean
   notes: string | null
   created_at: string
+  deleted_at: string | null // set when soft-deleted; null = live
+  activated_at: string | null // when the current run began; null = never re-activated, so every session it owns belongs to the current run
 }
 
 export interface MesoDayRow {
