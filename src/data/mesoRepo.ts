@@ -4,6 +4,21 @@ import type { MesoDraft, DraftDay, DraftExercise, MesoFull } from '../features/m
 
 /** Live mesos for the Mesos page, newest first. Soft-deleted ones are excluded: deleting a
  * meso should remove it from the app, and History is where its log stays readable. */
+/** How far to backdate a run's start stamp, in ms.
+ *
+ * `activated_at` is written from the *client* clock (PostgREST cannot evaluate `now()` in a
+ * PATCH or INSERT body) but is compared against `workout_session.started_at`, which the server
+ * assigns. On a device running fast, a stamp of exactly "now" would sit after the very next
+ * workout's server timestamp -- filing that session outside its own run permanently: missing
+ * from "previous workout", uncounted by the deload cadence, shown under "Earlier runs". The
+ * window only has to exclude sessions that are months old, so a minute of slack is free. */
+const RUN_STAMP_SKEW_MS = 60_000
+
+/** The timestamp to record as the start of a run. See RUN_STAMP_SKEW_MS. */
+function runStartStamp(): string {
+  return new Date(Date.now() - RUN_STAMP_SKEW_MS).toISOString()
+}
+
 export async function listMesos(userId: string): Promise<MesoRow[]> {
   const { data, error } = await supabase
     .from('meso')
@@ -82,6 +97,12 @@ async function createMeso(userId: string, draft: MesoDraft): Promise<string> {
       name: draft.name,
       deload_every_n_microcycles: draft.deloadEveryN,
       is_active: false,
+      // A new meso's run starts now. Stamping at creation is what keeps `activated_at`
+      // populated on every row: without it, whether a brand-new meso had one depended on
+      // *how* you activated it ("Save & Activate" stamped, the Mesos list did not), and
+      // "empty means the beginning of time" stayed an implicit convention that a future
+      // unconditional `.gte(activated_at)` would turn into a silent empty panel.
+      activated_at: runStartStamp(),
     })
     .select('id')
     .single()
@@ -205,15 +226,7 @@ export async function setActiveMeso(userId: string, mesoId: string, opts?: { fre
   // time is unreachable from PostgREST without an RPC or a trigger (a column default does not
   // fire on UPDATE), and the error is bounded by device skew, so client time it is.
   const patch: { is_active: boolean; activated_at?: string } = { is_active: true }
-  if (opts?.freshRun) {
-    // Backdated a minute. This is a *client* clock (PostgREST cannot evaluate now() in a PATCH
-    // body) compared against server-assigned started_at, and the stamp never moves again -- so
-    // on a device running fast, the session you log right after a fresh run would be filed
-    // outside its own run forever: absent from "previous workout", uncounted by the deload
-    // cadence, and shown under "Earlier runs". The window only has to exclude sessions that are
-    // months old, so a minute of slack is free.
-    patch.activated_at = new Date(Date.now() - 60_000).toISOString()
-  }
+  if (opts?.freshRun) patch.activated_at = runStartStamp()
   // Refuse to activate a soft-deleted meso. The builder still loads one from a stale
   // /mesos/:id/edit URL (`getMesoFull` deliberately does not filter the meso row), and its
   // "Save and activate" would otherwise set `is_active` on a row `getActiveMeso` ignores -- a

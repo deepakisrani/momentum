@@ -214,6 +214,22 @@ Buttons across the app read as title case: **Start Workout**, **Resume Workout**
 - **`dashboard.logWeight`** is a dead i18n key with no reader. Left in place; removing keys was
   out of scope.
 
+### 20. The backfill did what it claims (do this right after merging)
+
+Migration `0013` writes `activated_at` on every existing meso. It is the only migration here that
+touches *data* rather than schema, so it is the only one that cannot be corrected by a later
+commit — it has already written.
+
+- **Pass:** every meso still shows its full session list in History with **no** "Current run" /
+  "Earlier runs" split, and your active meso's deload counter is unchanged from before the merge.
+- **Why that is the pass condition:** the backfill is meant to be a behavioural no-op. It sets
+  each meso's stamp to its own first workout, and a session exactly on the boundary counts as
+  current — so everything stays in the current run. If you see a split appear on a meso you never
+  re-activated, or a deload badge that was not there before, the backfill picked the wrong value.
+- **The meso to check first is the imported June one.** Its sessions predate its `created_at`
+  (the import backdates `started_at`), so it is the row where a careless backfill would have gone
+  wrong — and the reason the value is the first *session* rather than `created_at`.
+
 ## Added by the final review — not covered above
 
 ### 15. Saving an edit twice does not re-stamp a removed day

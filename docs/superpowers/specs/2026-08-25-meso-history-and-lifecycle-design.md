@@ -104,6 +104,41 @@ exactly the case where a removed day still matters.
 `session_exercise.exercise_id`, never through the plan row, so removing a planned exercise
 destroys no logged data.
 
+## Part C2 — `activated_at` is populated everywhere
+
+**Added after implementation, in response to a question about existing mesos.** `0011` adds the
+column nullable with no backfill, which is behaviourally right — `NULL` means "no window", i.e.
+today's behaviour — but it left two loose ends.
+
+First, whether a *brand-new* meso got a stamp depended on how it was activated: the builder's
+"Save & Activate" stamped it, the Mesos list's "Make active" did not (zero sessions means no
+dialog, and that path passes no options). Harmless, since a meso with no workouts filters the
+same empty set either way, but inconsistent.
+
+Second, `NULL`-means-the-beginning-of-time is an implicit convention, and the two `if (since)`
+guards in `sessionRepo` are the only thing standing between it and a silent failure: PostgREST
+serialises `.gte(col, null)` as `started_at=gte.null`, Postgres fails the cast, and
+`PreviousWorkoutPanel` swallows the resulting 400 into an empty sheet.
+
+So: **`createMeso` stamps `activated_at`**, and migration `0013` backfills existing rows with
+each meso's **first completed session**, falling back to its `created_at` where it has never
+been trained. The column is then populated on every row, all activation paths agree, and the
+guards become defence rather than load-bearing.
+
+`min(started_at)` and `created_at` are **not** interchangeable here. The one-off June import
+(`scripts/import-june26-meso.sql`) backdates `started_at` while the meso row takes a default
+`created_at` of the import moment, so for that meso the sessions predate the row — a `created_at`
+backfill would have filed real workouts under "Earlier runs". `created_at` is used only where
+there are no sessions to be wrong about.
+
+Both writes are backdated one minute via a shared `runStartStamp()`. The stamp comes from a
+client clock but is compared against server-assigned `started_at`, so on a fast device an
+exact-now stamp would file the very next workout outside its own run permanently.
+
+The column is deliberately **not** made `NOT NULL`: that would ripple into `MesoRow`,
+`splitByRun` and the guards, all of which are tested, and it would remove the ability for a
+future feature to mean "no window" at all. Populated-in-practice is the goal, not enforced.
+
 ## Part B — History switcher and Unassigned
 
 `listMesoSessions(userId, mesoId, …)` and `getMesoSetRows(userId, mesoId)` widen `mesoId` to
