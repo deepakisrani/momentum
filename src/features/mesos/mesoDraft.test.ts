@@ -8,7 +8,7 @@ describe('blankMeso', () => {
 })
 
 const full: MesoFull = {
-  meso: { id: 'm1', user_id: 'u1', name: 'June', deload_every_n_microcycles: 4, is_active: true, notes: null, created_at: '2026-06-20T00:00:00Z' },
+  meso: { id: 'm1', user_id: 'u1', name: 'June', deload_every_n_microcycles: 4, is_active: true, notes: null, created_at: '2026-06-20T00:00:00Z', deleted_at: null, activated_at: null },
   days: [
     { id: 'd1', meso_id: 'm1', label: 'Push', order_index: 0, exercises: [
       { id: 'e1', meso_day_id: 'd1', exercise_id: 'ex1', order_index: 0, target_sets: 3, rep_min: 8, rep_max: 12 },

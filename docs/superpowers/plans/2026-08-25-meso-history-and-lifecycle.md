@@ -125,14 +125,27 @@ export interface MesoRow {
 - [ ] **Step 2: Verify**
 
 Run: `npx tsc -b`
-Expected: no output. (Every `meso` query uses `select('*')`, so no call site needs changing —
-the new fields simply arrive. If `tsc` reports errors, report them rather than working around
-them.)
+Expected: **one error**, which you must also fix:
+
+```
+src/features/mesos/mesoDraft.test.ts(11,3): error TS2739: ... is missing the following
+properties from type 'MesoRow': deleted_at, activated_at
+```
+
+`MesoFull`'s test fixture is the only place in `src/` that constructs a `MesoRow` *literal*
+(everything else types a query result, so the new fields simply arrive). Add both fields to it:
+
+```ts
+  meso: { id: 'm1', user_id: 'u1', name: 'June', deload_every_n_microcycles: 4, is_active: true, notes: null, created_at: '2026-06-20T00:00:00Z', deleted_at: null, activated_at: null },
+```
+
+Then `npx tsc -b` is clean. If any *other* error appears, report it rather than working around
+it — it would mean another literal exists that this plan has not accounted for.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add src/data/rows.ts
+git add src/data/rows.ts src/features/mesos/mesoDraft.test.ts
 git commit -m "feat(data): meso row carries deleted_at and activated_at"
 ```
 
