@@ -72,7 +72,7 @@
   "mesos.duplicate": "Duplicate",
   "mesos.active": "Active",
   "mesos.activate": "Make active",
-  "mesos.activateTitle": "Start a fresh run?",
+  "mesos.activateTitle": "Start a new run, or resume?",
   "mesos.activateBody": "A fresh run restarts the deload count and clears “previous workout”, so this block begins clean. Your earlier sessions stay in History either way.",
   "mesos.activateFresh": "Start Fresh Run",
   "mesos.activateResume": "Resume Previous Run",
