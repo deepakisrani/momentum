@@ -237,6 +237,8 @@
   "nav.notes": "Notes",
   "notes.title": "Notes",
   "notes.new": "New Note",
+  "notes.newTitle": "New note",
+  "notes.editTitle": "Edit note",
   "notes.empty": "No notes yet. Jot something down after a set — or any time.",
   "notes.emptyFiltered": "No notes for this exercise yet.",
   "notes.placeholder": "What happened? What should future you know?",

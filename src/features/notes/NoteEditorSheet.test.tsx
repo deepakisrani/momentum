@@ -208,7 +208,9 @@ describe('NoteEditorSheet — backdrop dismissal', () => {
     const user = userEvent.setup()
     const onClose = vi.fn()
     const { container } = render(<NoteEditorSheet userId="u1" onSaved={() => {}} onClose={onClose} />)
-    await user.click(screen.getByRole('heading', { name: 'New Note' }))
+    // The sheet heading is prose ('New note'), not the button label ('New Note') -- the two
+    // roles use separate keys precisely so the title-case convention can hold for both.
+    await user.click(screen.getByRole('heading', { name: 'New note' }))
     expect(onClose).not.toHaveBeenCalled()
 
     const backdrop = container.querySelector('.fixed.inset-0')
