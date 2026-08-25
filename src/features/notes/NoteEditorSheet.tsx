@@ -151,8 +151,7 @@ export function NoteEditorSheet({
 
       {/* Sibling of the backdrop — see the note on this component. It also covers the whole
           sheet, so the editor cannot be dismissed while the picker is open, which is what
-          keeps a typed body from being discarded behind it. (It used to matter for scroll
-          locking too; useBodyScrollLock is reference-counted now, so unwind order is safe.) */}
+          keeps a typed body from being discarded behind it. */}
       {pickerOpen && (
         <ExercisePickerSheet
           onPick={(ex) => {
