@@ -16,11 +16,17 @@ function renderRelative(r: RelativeDate, t: (k: string) => string): string {
   }
 }
 
-export function PreviousWorkoutPanel({ userId, mesoId, mesoDayId, dayLabel, onClose }: {
+export function PreviousWorkoutPanel({ userId, mesoId, mesoDayId, dayLabel, since, onClose }: {
   userId: string
   mesoId: string
   mesoDayId: string
   dayLabel: string
+  /** `activated_at` **of `mesoId`**, or null for no window. Only the current run is
+   * "previous" -- a session from before the meso was re-activated belongs to an earlier
+   * block, and History is where those live. It must be that meso's own timestamp: windowing
+   * one meso's sessions by another's silently empties the panel, since the catch below turns
+   * any failure, and a filter that matches nothing, into the same "no previous workout". */
+  since: string | null
   onClose: () => void
 }) {
   const t = useT()
@@ -32,8 +38,8 @@ export function PreviousWorkoutPanel({ userId, mesoId, mesoDayId, dayLabel, onCl
   const [detailError, setDetailError] = useState(false)
 
   useEffect(() => {
-    listMesoSessions(userId, mesoId, { mesoDayId }).then(setSessions).catch(() => setSessions([]))
-  }, [userId, mesoId, mesoDayId])
+    listMesoSessions(userId, mesoId, { mesoDayId, since }).then(setSessions).catch(() => setSessions([]))
+  }, [userId, mesoId, mesoDayId, since])
 
   useEffect(() => {
     if (!sessions || !sessions.length) { setFull(null); return }

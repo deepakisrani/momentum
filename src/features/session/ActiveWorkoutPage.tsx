@@ -54,7 +54,10 @@ export function ActiveWorkoutPage() {
         setExMap(Object.fromEntries(exList.map((e) => [e.id, e])))
         if (meso) {
           setMesoFull(await getMesoFull(meso.id))
-          setDayStats(await getMesoDayStats(userId, meso.id))
+          // Windowed to this meso's current run, so re-activating an old meso does not resume
+          // its deload cadence from months-old sessions. `meso.activated_at` is safe to read
+          // straight off this row: the stats are for `meso.id`, so window and rows agree.
+          setDayStats(await getMesoDayStats(userId, meso.id, meso.activated_at))
         }
         if (existing) { setSessionId(existing.id); await loadSession(existing.id) }
       } finally {
@@ -249,6 +252,13 @@ export function ActiveWorkoutPage() {
           mesoId={full.session.meso_id}
           mesoDayId={full.session.meso_day_id}
           dayLabel={dayLabel}
+          // The panel lists sessions of the *session's* meso, so the window must be that
+          // meso's own `activated_at`. `activeMeso` is whatever is active *now*, and the two
+          // can differ: a session left in progress on meso A while meso B is activated
+          // elsewhere still resumes here. Windowing A's sessions by B's activation would
+          // silently empty the panel (B just activated => nothing of A is "after" it). On a
+          // mismatch we pass null and show every run -- too much, never nothing.
+          since={activeMeso && activeMeso.id === full.session.meso_id ? activeMeso.activated_at : null}
           onClose={() => setHistoryOpen(false)}
         />
       )}
