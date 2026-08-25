@@ -194,8 +194,15 @@ sentences such as `mesos.deleteConfirm`.
 - **Re-activating a never-trained meso:** silent, no dialog, no stamp.
 - **A meso with sessions both before and after its `activated_at`:** the intended case — the
   panel and cadence see only the newer ones; History shows both groups.
-- **`activated_at` in the future** (clock skew): the window would hide everything; not
-  guarded, since the value is only ever written as `now()` server-side.
+- **`activated_at` in the future** (clock skew): **written from the client clock, not the
+  server.** PostgREST cannot evaluate `now()` in a PATCH body and a column `default` does not
+  fire on UPDATE, so server time would need an RPC or a `before update` trigger. This matters
+  asymmetrically: `deleted_at` is only ever read as `is null`, so skew is irrelevant there, but
+  `activated_at` is compared with `.gte` against `workout_session.started_at`, which *is*
+  server-side (`default now()`). A device clock running fast therefore puts the window slightly
+  in the future and can briefly hide a just-finished session from "Previous workout" and the
+  deload count; a slow clock only widens the window harmlessly. Bounded by device skew — seconds
+  on an NTP-synced phone — so accepted rather than guarded.
 - **CSV filename for Unassigned:** slug `unassigned`.
 - **Progress "This meso" range:** unchanged and unwindowed — it covers all runs of the active
   meso. Consistent with the export.
