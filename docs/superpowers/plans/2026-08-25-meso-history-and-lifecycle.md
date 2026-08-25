@@ -618,7 +618,7 @@ assumption `listMesoSessions` already relies on for `.order('started_at')`.
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/features/history/historyScope.test.ts`
-Expected: PASS — 17 tests.
+Expected: PASS — 16 tests. (Counted: scopeKey 1, historyScopeOptions 4, defaultHistoryScope 5, splitByRun 6.)
 
 - [ ] **Step 5: Think adversarially and add what you find**
 
