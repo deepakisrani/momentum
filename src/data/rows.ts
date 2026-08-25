@@ -52,6 +52,7 @@ export interface MesoDayRow {
   meso_id: string
   label: string
   order_index: number
+  deleted_at: string | null // set when the day was removed while editing the meso; the row stays so past sessions keep their label
 }
 
 export interface MesoDayExerciseRow {
