@@ -29,11 +29,17 @@ export async function listMesosForHistory(userId: string): Promise<MesoRow[]> {
   return (data ?? []) as MesoRow[]
 }
 
+/** The full plan for a meso: live days only, in order, each with its planned exercises.
+ *
+ * Every caller here plans *future* training -- the builder, the workout-day chooser and
+ * Duplicate -- so a day the user has removed must not appear. History needs the opposite and
+ * uses `getMesoDayLabels`. The `meso` row itself is deliberately unfiltered: a soft-deleted
+ * meso still loads (see `setActiveMeso` for why that is safe). */
 export async function getMesoFull(mesoId: string): Promise<MesoFull> {
   const { data: meso, error: me } = await supabase.from('meso').select('*').eq('id', mesoId).single()
   if (me) throw me
   const { data: days, error: de } = await supabase
-    .from('meso_day').select('*').eq('meso_id', mesoId).order('order_index', { ascending: true })
+    .from('meso_day').select('*').eq('meso_id', mesoId).is('deleted_at', null).order('order_index', { ascending: true })
   if (de) throw de
   const dayIds = (days ?? []).map((d) => d.id)
   let exercises: MesoDayExerciseRow[] = []
@@ -47,6 +53,21 @@ export async function getMesoFull(mesoId: string): Promise<MesoFull> {
     meso: meso as MesoRow,
     days: (days as MesoDayRow[]).map((d) => ({ ...d, exercises: exercises.filter((e) => e.meso_day_id === d.id) })),
   }
+}
+
+/** Day id -> label for a meso, **including days the user has since removed**. History exists to
+ * name past sessions, and a session logged on a removed day still carries that day's id -- so
+ * this is the one reader that must see soft-deleted days.
+ *
+ * Deliberately not a flag on `getMesoFull`: History needs labels, not the exercise plan, and no
+ * caller can leak a removed day into a planning surface by forgetting an argument. Unordered on
+ * purpose -- it is a lookup map, and `order_index` is meaningless once a day is removed (live
+ * days are re-indexed from 0 without it). */
+export async function getMesoDayLabels(mesoId: string): Promise<Record<string, string>> {
+  const { data, error } = await supabase
+    .from('meso_day').select('id, label').eq('meso_id', mesoId)
+  if (error) throw error
+  return Object.fromEntries(((data ?? []) as { id: string; label: string }[]).map((d) => [d.id, d.label]))
 }
 
 export async function saveMeso(userId: string, draft: MesoDraft): Promise<string> {
@@ -97,13 +118,21 @@ async function updateMeso(draft: MesoDraft): Promise<string> {
     .eq('id', mesoId)
   if (ue) throw ue
 
-  // Reconcile days by id (preserves history: workout_session.meso_day_id).
-  const { data: existingDays, error: ee } = await supabase.from('meso_day').select('id').eq('meso_id', mesoId)
+  // Reconcile days by id. Removed days are soft-deleted, never deleted: workout_session
+  // .meso_day_id is `on delete set null` (0001), so a hard delete stripped the day label off
+  // every session ever logged on it -- and cascaded to meso_day_exercise, losing the targets
+  // of a session in progress on that day. See 0012.
+  //
+  // Only live days are read back, so a day removed in an earlier edit is not re-stamped with a
+  // newer `deleted_at` (nor listed as "removed" again on every subsequent save).
+  const { data: existingDays, error: ee } = await supabase
+    .from('meso_day').select('id').eq('meso_id', mesoId).is('deleted_at', null)
   if (ee) throw ee
   const keptDayIds = draft.days.filter((d) => d.id).map((d) => d.id as string)
   const removedDayIds = (existingDays ?? []).map((d) => d.id).filter((id) => !keptDayIds.includes(id))
   if (removedDayIds.length) {
-    const { error } = await supabase.from('meso_day').delete().in('id', removedDayIds)
+    const { error } = await supabase
+      .from('meso_day').update({ deleted_at: new Date().toISOString() }).in('id', removedDayIds)
     if (error) throw error
   }
 
@@ -129,6 +158,9 @@ async function reconcileExercises(dayId: string, exercises: DraftExercise[]): Pr
   if (ee) throw ee
   const keptIds = exercises.filter((e) => e.id).map((e) => e.id as string)
   const removed = (existing ?? []).map((e) => e.id).filter((id) => !keptIds.includes(id))
+  // A hard delete, unlike days above, and deliberately: a logged set reaches its exercise via
+  // session_exercise.exercise_id -> exercise (0001), never via meso_day_exercise, so dropping a
+  // planned exercise destroys no history. meso_day_exercise is plan, not log.
   if (removed.length) {
     const { error } = await supabase.from('meso_day_exercise').delete().in('id', removed)
     if (error) throw error
@@ -175,11 +207,11 @@ export async function setActiveMeso(userId: string, mesoId: string, opts?: { fre
   const patch: { is_active: boolean; activated_at?: string } = { is_active: true }
   if (opts?.freshRun) patch.activated_at = new Date().toISOString()
   // Refuse to activate a soft-deleted meso. The builder still loads one from a stale
-  // /mesos/:id/edit URL (`getMesoFull` is deliberately unfiltered), and its "Save and activate"
-  // would otherwise set `is_active` on a row `getActiveMeso` ignores -- a silent no-op leaving
-  // the user with no active meso and no explanation. Reading the affected row back makes that
-  // loud. `user_id` is redundant with the `meso_self` RLS policy; it is here so the row count
-  // below means "no live meso of yours" rather than "RLS ate it".
+  // /mesos/:id/edit URL (`getMesoFull` deliberately does not filter the meso row), and its
+  // "Save and activate" would otherwise set `is_active` on a row `getActiveMeso` ignores -- a
+  // silent no-op leaving the user with no active meso and no explanation. Reading the affected
+  // row back makes that loud. `user_id` is redundant with the `meso_self` RLS policy; it is here
+  // so the row count below means "no live meso of yours" rather than "RLS ate it".
   const { data, error: e2 } = await supabase
     .from('meso').update(patch).eq('id', mesoId).eq('user_id', userId).is('deleted_at', null).select('id')
   if (e2) throw e2
