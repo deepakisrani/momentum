@@ -57,17 +57,25 @@ export function flattenMesoQuery(sessions: QSession[]): MesoSetRow[] {
   return rows
 }
 
-/** Fetch all completed logged sets for one meso in a single nested query. */
-export async function getMesoSetRows(userId: string, mesoId: string): Promise<MesoSetRow[]> {
-  const { data, error } = await supabase
+/** Fetch all completed logged sets for one meso in a single nested query. `mesoId: null`
+ * exports the unassigned bucket. Deliberately not windowed by `activated_at` -- an export
+ * should contain everything the meso owns, every run of it.
+ *
+ * Rooted at `workout_session` so the top-level row count is "number of sessions", staying
+ * under PostgREST's 1000-row cap; nested sets are JSON and don't count. The unassigned
+ * bucket aggregates every orphan across all time, so it is the largest plausible bucket --
+ * still ~5 years of 4x/week training away from the cap. */
+export async function getMesoSetRows(userId: string, mesoId: string | null): Promise<MesoSetRow[]> {
+  let q = supabase
     .from('workout_session')
     .select(
       'started_at, is_deload, meso_day_id, meso_day ( label ), session_exercise ( order_index, exercise ( name, muscle_group ), logged_set ( set_index, set_segment ( segment_index, weight, reps, rir ) ) )',
     )
     .eq('user_id', userId)
-    .eq('meso_id', mesoId)
     .eq('status', 'completed')
     .order('started_at', { ascending: true })
+  q = mesoId === null ? q.is('meso_id', null) : q.eq('meso_id', mesoId)
+  const { data, error } = await q
   if (error) throw error
   return flattenMesoQuery((data ?? []) as unknown as QSession[])
 }
