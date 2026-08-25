@@ -4,7 +4,9 @@ import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
 import { listMesos, setActiveMeso, deleteMeso, getMesoFull, saveMeso } from '../../data/mesoRepo'
 import { draftFromFull, stripIds } from './mesoDraft'
+import { countCompletedSessions } from '../../data/sessionRepo'
 import { ConfirmModal } from '../../components/ConfirmModal'
+import { ActivationDialog } from './ActivationDialog'
 import type { MesoRow } from '../../data/rows'
 
 export function MesoListPage() {
@@ -17,6 +19,7 @@ export function MesoListPage() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<MesoRow | null>(null)
+  const [pendingActivate, setPendingActivate] = useState<MesoRow | null>(null)
 
   async function reload() {
     setLoading(true)
@@ -35,9 +38,43 @@ export function MesoListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
 
-  async function activate(id: string) {
+  /** Activating a meso nobody has trained has nothing to preserve -- no earlier run, no deload
+   * cadence -- so it activates straight away and the three-way question is never asked.
+   *
+   * The count is fetched per tap rather than prefetched for every meso on load. It decides
+   * only whether to *ask*, and a stale zero -- no sessions at load, one completed since --
+   * would skip the question and silently restart a live block's deload cadence. One indexed
+   * head-count on the tap that needs it beats one per meso on every visit that does not. */
+  async function onActivateClick(m: MesoRow) {
     setBusy(true)
-    try { await setActiveMeso(userId, id); await reload() } catch { setError(t('common.error')) } finally { setBusy(false) }
+    try {
+      const trained = await countCompletedSessions(userId, m.id)
+      if (trained === 0) {
+        await setActiveMeso(userId, m.id)
+        await reload()
+        return
+      }
+      setPendingActivate(m)
+    } catch {
+      // Reload first, then the message -- see `activate` below for both reasons.
+      await reload()
+      setError(t('common.error'))
+    } finally { setBusy(false) }
+  }
+
+  async function activate(id: string, freshRun: boolean) {
+    setBusy(true)
+    try {
+      await setActiveMeso(userId, id, { freshRun })
+      await reload()
+    } catch {
+      // Reload before the message, never after: `setActiveMeso` clears every `is_active` flag
+      // before it sets the new one, so a failure part-way leaves no active meso at all while
+      // the list still shows the old "Active" badge. And `reload` clears `error` when it
+      // succeeds, so setting the message first would hand the user a silent failure.
+      await reload()
+      setError(t('common.error'))
+    } finally { setBusy(false) }
   }
 
   async function remove(id: string) {
@@ -78,7 +115,7 @@ export function MesoListPage() {
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2 text-sm">
                   <Link to={`/mesos/${m.id}/edit`} className="rounded-lg bg-white px-3 py-1.5 font-medium dark:bg-[#0f1115]">{t('mesos.edit')}</Link>
-                  {!m.is_active && <button disabled={busy} onClick={() => activate(m.id)} className="rounded-lg bg-brand-700 px-3 py-1.5 font-medium text-white hover:bg-brand-800 disabled:opacity-60">{t('mesos.activate')}</button>}
+                  {!m.is_active && <button disabled={busy} onClick={() => void onActivateClick(m)} className="rounded-lg bg-brand-700 px-3 py-1.5 font-medium text-white hover:bg-brand-800 disabled:opacity-60">{t('mesos.activate')}</button>}
                   <button disabled={busy} onClick={() => duplicate(m.id)} className="rounded-lg bg-white px-3 py-1.5 font-medium dark:bg-[#0f1115]">{t('mesos.duplicate')}</button>
                   <button disabled={busy} onClick={() => setPendingDelete(m)} className="rounded-lg px-3 py-1.5 font-medium text-red-500">{t('mesos.delete')}</button>
                 </div>
@@ -87,6 +124,15 @@ export function MesoListPage() {
           </ul>
         )}
       </div>
+      {pendingActivate && (
+        <ActivationDialog
+          mesoName={pendingActivate.name}
+          busy={busy}
+          onFreshRun={() => { const id = pendingActivate.id; setPendingActivate(null); void activate(id, true) }}
+          onResume={() => { const id = pendingActivate.id; setPendingActivate(null); void activate(id, false) }}
+          onCancel={() => setPendingActivate(null)}
+        />
+      )}
       {pendingDelete && (
         <ConfirmModal
           title={pendingDelete.name}
