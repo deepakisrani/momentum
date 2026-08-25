@@ -38,7 +38,14 @@ export function PreviousWorkoutPanel({ userId, mesoId, mesoDayId, dayLabel, sinc
   const [detailError, setDetailError] = useState(false)
 
   useEffect(() => {
-    listMesoSessions(userId, mesoId, { mesoDayId, since }).then(setSessions).catch(() => setSessions([]))
+    listMesoSessions(userId, mesoId, { mesoDayId, since })
+      .then(setSessions)
+      .catch((err) => {
+        // An empty panel and a failed query look identical here, and `since` is a new column:
+        // without this line, a bad window is indistinguishable from "no previous workout".
+        if (import.meta.env.DEV) console.error('[History] previous workout failed:', err)
+        setSessions([])
+      })
   }, [userId, mesoId, mesoDayId, since])
 
   useEffect(() => {

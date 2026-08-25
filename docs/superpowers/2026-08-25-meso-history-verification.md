@@ -12,15 +12,39 @@ added or changed on this branch — soft delete, the deleted-aware listings, the
 window, `getMesoDayLabels`, `countCompletedSessions`, the unassigned bucket — has been verified
 only by TypeScript and by reading. Not one of them has executed.
 
-Two consequences worth knowing before you poke at anything:
+### Do not exercise this branch before the migrations apply
 
-- **The History page cannot render on this branch.** Its first query selects the new columns,
-  which do not exist yet, so the page shows its error state. That is expected, not a bug.
-- **Do not try "Start Fresh Run" before merging.** It writes `activated_at`, which PostgREST
-  will reject — and because `setActiveMeso` clears every `is_active` flag in a *separate*
-  request that commits first, a failed attempt leaves you with **no active meso** plus an error.
-  Recoverable by re-activating. "Resume Previous Run" only writes `is_active`, so it works
-  either way.
+An earlier version of this document got this backwards in both directions. Corrected:
+
+**Do not activate a meso on this branch at all — including "Resume Previous Run".** Every
+activation path filters `.is('deleted_at', null)` on the target row, and PostgREST rejects a
+filter on a column that does not exist just as it rejects an unknown column in a write. Because
+`setActiveMeso` clears every `is_active` flag in a **separate request that commits first**, any
+failed attempt leaves you with **no active meso** plus an error. Recoverable by re-activating
+after the migrations land. Fresh run and resume fail identically; so does "Save & Activate", and
+so does activating a meso you have never trained.
+
+**What else is down pre-migration**, all for the same reason — a filter or write naming a column
+that is not there yet:
+
+| Surface | Pre-migration |
+|---|---|
+| Mesos page | Renders only its error; no button on it is reachable |
+| Meso builder, workout day chooser | Down (`getMesoFull`) |
+| Saving an edit to an existing meso | Fails |
+| Deleting a meso | Fails |
+| Workout page | Reads "Activate a meso first" |
+| **History page, including CSV export** | **Works** |
+
+**History does render**, contrary to what this document first claimed: its queries use
+`select('*')` and never name the new columns. It simply never splits runs, because
+`activated_at` comes back undefined and the window falls away. So the feature that motivated all
+of this is the one thing you *can* look at early.
+
+The reverse order is safe: applying the migrations before this code deploys breaks nothing, since
+the old code selects `*`, ignores the extra columns, and its hard deletes are the pre-existing
+bugs rather than new ones. **Confirm your pipeline applies migrations before serving the new
+bundle** — that ordering is the single largest risk on this branch.
 
 Everything below assumes the migrations have applied.
 
@@ -176,9 +200,12 @@ Buttons across the app read as title case: **Start Workout**, **Resume Workout**
 
 - **A half-typed height** during a unit switch converts and clamps (`17` on the way to `175`
   becomes `20`). Visible and correctable, unlike the silent corruption it replaced.
-- **`activated_at` is client time**, not server time. PostgREST cannot evaluate `now()` in a
-  PATCH body. A fast device clock can briefly hide a just-finished session from "Previous
-  workout"; bounded by device skew.
+- **`activated_at` is client time**, not server time — PostgREST cannot evaluate `now()` in a
+  PATCH body. The consequence was not "brief": the stamp never moves, so on a device running
+  fast the session logged right after a fresh run would sit outside its own run *permanently* —
+  missing from "Previous workout", uncounted by the deload cadence, and shown under "Earlier
+  runs" ten minutes after you did it. The stamp is now backdated one minute, which closes it
+  (the window only has to exclude sessions that are months old).
 - **Remove a day and re-add one with the same name** and you get two rows. History labels both
   "Push", but the previous-workout panel filters on the *new* day's id, so pre-removal sessions
   stop surfacing there and that day's cadence restarts.
@@ -186,6 +213,53 @@ Buttons across the app read as title case: **Start Workout**, **Resume Workout**
   `activated_at` — fresh run and resume produce identical state. One extra tap in a rare state.
 - **`dashboard.logWeight`** is a dead i18n key with no reader. Left in place; removing keys was
   out of scope.
+
+## Added by the final review — not covered above
+
+### 15. Saving an edit twice does not re-stamp a removed day
+
+Edit a meso, remove a day, save. Then save again without changing anything.
+
+- **Pass:** the second save neither re-stamps `deleted_at` on the already-removed day nor treats
+  it as newly removed. The reconcile reads only live days, which is what prevents it — but that
+  query has never run.
+
+### 16. The stale-URL activation guard actually fires
+
+Soft-delete a meso, then open `/mesos/<that-id>/edit` (the builder loads a deleted meso
+deliberately) and press "Save & Activate".
+
+- **Pass:** you get an error message. **Not** a silent no-op that leaves you with no active meso.
+- This is the one query on the branch whose entire job is to fail; nothing else exercises it.
+
+### 17. Three changes agreeing at once
+
+With the activation dialog open on the Mesos page, Tab behind it (no modal here traps focus),
+delete **that same meso** through the delete confirmation, then click "Start Fresh Run" on the
+now-stale dialog.
+
+- **Pass:** the error from check 16, not an activation — and page scroll works afterwards.
+- Sharpest cross-strand interaction on the branch: the soft delete, the activation guard and the
+  reference-counted scroll lock all have to be right simultaneously.
+
+### 18. A day removed mid-workout keeps its targets
+
+Start a workout on a day, then (another tab or device) edit that meso and remove that day. Back
+in the workout, check the set targets.
+
+- **Pass:** your planned sets and rep ranges are intact.
+- **Why it matters more than it sounds:** this is the only place the day soft delete protects a
+  *live* workout rather than a historical record. Before it, the hard delete cascaded the day's
+  planned exercises away and every target silently fell back to 3 sets of 8–12 — so you would log
+  a whole session against the wrong plan with no error anywhere.
+
+### 19. A day label mid-workout after removing that day
+
+Same setup as 18, but look at the "Previous workout" sheet header.
+
+- **Known cosmetic gap:** the label resolves against live days only, so it renders blank and the
+  header reads " · Aug 25". New surface created by keeping `meso_day_id` alive — which is the
+  fix working. Not corrected; report if it bothers you.
 
 ## What to report back
 

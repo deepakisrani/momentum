@@ -138,7 +138,7 @@ export function HistoryPage() {
         {error ? (
           <p className="text-sm text-red-500">{t('common.error')}</p>
         ) : nothingToShow ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">{t('history.noActiveMeso')}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{t('history.nothingLogged')}</p>
         ) : (
           <>
             <div className="flex flex-wrap items-center justify-between gap-2">

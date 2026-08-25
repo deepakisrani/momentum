@@ -79,7 +79,15 @@ export function MesoListPage() {
 
   async function remove(id: string) {
     setBusy(true)
-    try { await deleteMeso(id); await reload() } finally { setBusy(false) }
+    try {
+      await deleteMeso(id)
+      await reload()
+    } catch {
+      // Its three sibling handlers all report failures; this one did not, and soft delete made
+      // it a PATCH against a brand-new column -- the operation here most likely to fail first.
+      await reload()
+      setError(t('common.error'))
+    } finally { setBusy(false) }
   }
 
   async function duplicate(id: string) {

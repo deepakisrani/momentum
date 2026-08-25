@@ -16,8 +16,14 @@ import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
  * traversing the card, so the card's stopPropagation cannot see it. */
 export function ActivationDialog({ mesoName, busy, onFreshRun, onResume, onCancel }: {
   mesoName: string
-  /** Set once a choice is in flight. Disables all three buttons *and* backdrop dismissal, so
-   * a double tap cannot activate twice or cancel a switch that is already happening. */
+  /** Set once a choice is in flight: disables all three buttons and backdrop dismissal.
+   *
+   * Note what actually prevents a double tap: `MesoListPage` clears `pendingActivate` before
+   * awaiting, so React batches the unmount with this flag and the dialog is gone before `busy`
+   * is ever true under pointer input -- the same synchronous-unmount pattern `ConfirmModal`
+   * relies on with no busy prop at all. This is defence for the paths that keep the dialog
+   * mounted across the await (no modal here traps focus, so a keyboard user can reach the page
+   * behind it) and it is the contract the tests pin. */
   busy: boolean
   onFreshRun: () => void
   onResume: () => void

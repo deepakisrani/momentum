@@ -185,6 +185,7 @@
   "history.empty": "No workouts logged in this meso yet.",
   "history.emptyScope": "No workouts logged in this mesocycle.",
   "history.noActiveMeso": "No active mesocycle.",
+  "history.nothingLogged": "No workouts logged yet.",
   "history.mesoScope": "Showing",
   "history.unassigned": "Unassigned workouts",
   "history.currentRun": "Current run",

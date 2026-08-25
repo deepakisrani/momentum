@@ -24,6 +24,9 @@ export function MesoBuilderPage() {
   const [showError, setShowError] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
+  // Whether this meso was already the active one when the builder opened. `MesoDraft` drops
+  // is_active, so it has to be captured separately -- and it decides fresh-run vs resume below.
+  const [wasActive, setWasActive] = useState(false)
 
   useEffect(() => {
     listExercises().then((list) => setExMap(Object.fromEntries(list.map((e) => [e.id, e])))).catch(() => {})
@@ -32,7 +35,7 @@ export function MesoBuilderPage() {
   useEffect(() => {
     if (!id) return
     getMesoFull(id)
-      .then((full) => setDraft(draftFromFull(full)))
+      .then((full) => { setDraft(draftFromFull(full)); setWasActive(full.meso.is_active) })
       .catch(() => navigate('/mesos', { replace: true }))
       .finally(() => setLoading(false))
   }, [id])
@@ -69,7 +72,13 @@ export function MesoBuilderPage() {
     try {
       const newId = await saveMeso(userId, draft)
       if (activate) {
-        await setActiveMeso(userId, newId)
+        // Activating a meso that was NOT already active starts a fresh run, matching the
+        // Mesos page's dialog. Without this, "Save & Activate" was a second activation path
+        // that silently resumed -- so re-activating an old block through Edit reproduced the
+        // exact bug the fresh-run window exists to fix: a deload cadence counted from
+        // months-old sessions. Saving edits to the meso that is already active resumes, so
+        // fixing a typo mid-block does not reset the count.
+        await setActiveMeso(userId, newId, { freshRun: !wasActive })
       }
       navigate('/mesos')
     } catch {

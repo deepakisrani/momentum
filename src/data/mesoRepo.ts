@@ -205,7 +205,15 @@ export async function setActiveMeso(userId: string, mesoId: string, opts?: { fre
   // time is unreachable from PostgREST without an RPC or a trigger (a column default does not
   // fire on UPDATE), and the error is bounded by device skew, so client time it is.
   const patch: { is_active: boolean; activated_at?: string } = { is_active: true }
-  if (opts?.freshRun) patch.activated_at = new Date().toISOString()
+  if (opts?.freshRun) {
+    // Backdated a minute. This is a *client* clock (PostgREST cannot evaluate now() in a PATCH
+    // body) compared against server-assigned started_at, and the stamp never moves again -- so
+    // on a device running fast, the session you log right after a fresh run would be filed
+    // outside its own run forever: absent from "previous workout", uncounted by the deload
+    // cadence, and shown under "Earlier runs". The window only has to exclude sessions that are
+    // months old, so a minute of slack is free.
+    patch.activated_at = new Date(Date.now() - 60_000).toISOString()
+  }
   // Refuse to activate a soft-deleted meso. The builder still loads one from a stale
   // /mesos/:id/edit URL (`getMesoFull` deliberately does not filter the meso row), and its
   // "Save and activate" would otherwise set `is_active` on a row `getActiveMeso` ignores -- a
