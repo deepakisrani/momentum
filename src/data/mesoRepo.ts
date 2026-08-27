@@ -2,7 +2,39 @@ import { supabase } from '../lib/supabase'
 import type { MesoRow, MesoDayRow, MesoDayExerciseRow } from './rows'
 import type { MesoDraft, DraftDay, DraftExercise, MesoFull } from '../features/mesos/mesoDraft'
 
+/** Live mesos for the Mesos page, newest first. Soft-deleted ones are excluded: deleting a
+ * meso should remove it from the app, and History is where its log stays readable. */
+/** How far to backdate a run's start stamp, in ms.
+ *
+ * `activated_at` is written from the *client* clock (PostgREST cannot evaluate `now()` in a
+ * PATCH or INSERT body) but is compared against `workout_session.started_at`, which the server
+ * assigns. On a device running fast, a stamp of exactly "now" would sit after the very next
+ * workout's server timestamp -- filing that session outside its own run permanently: missing
+ * from "previous workout", uncounted by the deload cadence, shown under "Earlier runs". The
+ * window only has to exclude sessions that are months old, so a minute of slack is free. */
+const RUN_STAMP_SKEW_MS = 60_000
+
+/** The timestamp to record as the start of a run. See RUN_STAMP_SKEW_MS. */
+function runStartStamp(): string {
+  return new Date(Date.now() - RUN_STAMP_SKEW_MS).toISOString()
+}
+
 export async function listMesos(userId: string): Promise<MesoRow[]> {
+  const { data, error } = await supabase
+    .from('meso')
+    .select('*')
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data ?? []) as MesoRow[]
+}
+
+/** Every meso including soft-deleted ones, newest first. History needs the deleted ones --
+ * keeping their sessions readable is the whole point of soft-deleting -- which is why this is
+ * a separate function rather than a flag on `listMesos`: no caller can surface a deleted meso
+ * where it does not belong by forgetting an argument. */
+export async function listMesosForHistory(userId: string): Promise<MesoRow[]> {
   const { data, error } = await supabase
     .from('meso')
     .select('*')
@@ -12,11 +44,17 @@ export async function listMesos(userId: string): Promise<MesoRow[]> {
   return (data ?? []) as MesoRow[]
 }
 
+/** The full plan for a meso: live days only, in order, each with its planned exercises.
+ *
+ * Every caller here plans *future* training -- the builder, the workout-day chooser and
+ * Duplicate -- so a day the user has removed must not appear. History needs the opposite and
+ * uses `getMesoDayLabels`. The `meso` row itself is deliberately unfiltered: a soft-deleted
+ * meso still loads (see `setActiveMeso` for why that is safe). */
 export async function getMesoFull(mesoId: string): Promise<MesoFull> {
   const { data: meso, error: me } = await supabase.from('meso').select('*').eq('id', mesoId).single()
   if (me) throw me
   const { data: days, error: de } = await supabase
-    .from('meso_day').select('*').eq('meso_id', mesoId).order('order_index', { ascending: true })
+    .from('meso_day').select('*').eq('meso_id', mesoId).is('deleted_at', null).order('order_index', { ascending: true })
   if (de) throw de
   const dayIds = (days ?? []).map((d) => d.id)
   let exercises: MesoDayExerciseRow[] = []
@@ -32,6 +70,21 @@ export async function getMesoFull(mesoId: string): Promise<MesoFull> {
   }
 }
 
+/** Day id -> label for a meso, **including days the user has since removed**. History exists to
+ * name past sessions, and a session logged on a removed day still carries that day's id -- so
+ * this is the one reader that must see soft-deleted days.
+ *
+ * Deliberately not a flag on `getMesoFull`: History needs labels, not the exercise plan, and no
+ * caller can leak a removed day into a planning surface by forgetting an argument. Unordered on
+ * purpose -- it is a lookup map, and `order_index` is meaningless once a day is removed (live
+ * days are re-indexed from 0 without it). */
+export async function getMesoDayLabels(mesoId: string): Promise<Record<string, string>> {
+  const { data, error } = await supabase
+    .from('meso_day').select('id, label').eq('meso_id', mesoId)
+  if (error) throw error
+  return Object.fromEntries(((data ?? []) as { id: string; label: string }[]).map((d) => [d.id, d.label]))
+}
+
 export async function saveMeso(userId: string, draft: MesoDraft): Promise<string> {
   return draft.id ? updateMeso(draft) : createMeso(userId, draft)
 }
@@ -44,6 +97,12 @@ async function createMeso(userId: string, draft: MesoDraft): Promise<string> {
       name: draft.name,
       deload_every_n_microcycles: draft.deloadEveryN,
       is_active: false,
+      // A new meso's run starts now. Stamping at creation is what keeps `activated_at`
+      // populated on every row: without it, whether a brand-new meso had one depended on
+      // *how* you activated it ("Save & Activate" stamped, the Mesos list did not), and
+      // "empty means the beginning of time" stayed an implicit convention that a future
+      // unconditional `.gte(activated_at)` would turn into a silent empty panel.
+      activated_at: runStartStamp(),
     })
     .select('id')
     .single()
@@ -80,13 +139,21 @@ async function updateMeso(draft: MesoDraft): Promise<string> {
     .eq('id', mesoId)
   if (ue) throw ue
 
-  // Reconcile days by id (preserves history: workout_session.meso_day_id).
-  const { data: existingDays, error: ee } = await supabase.from('meso_day').select('id').eq('meso_id', mesoId)
+  // Reconcile days by id. Removed days are soft-deleted, never deleted: workout_session
+  // .meso_day_id is `on delete set null` (0001), so a hard delete stripped the day label off
+  // every session ever logged on it -- and cascaded to meso_day_exercise, losing the targets
+  // of a session in progress on that day. See 0012.
+  //
+  // Only live days are read back, so a day removed in an earlier edit is not re-stamped with a
+  // newer `deleted_at` (nor listed as "removed" again on every subsequent save).
+  const { data: existingDays, error: ee } = await supabase
+    .from('meso_day').select('id').eq('meso_id', mesoId).is('deleted_at', null)
   if (ee) throw ee
   const keptDayIds = draft.days.filter((d) => d.id).map((d) => d.id as string)
   const removedDayIds = (existingDays ?? []).map((d) => d.id).filter((id) => !keptDayIds.includes(id))
   if (removedDayIds.length) {
-    const { error } = await supabase.from('meso_day').delete().in('id', removedDayIds)
+    const { error } = await supabase
+      .from('meso_day').update({ deleted_at: new Date().toISOString() }).in('id', removedDayIds)
     if (error) throw error
   }
 
@@ -112,6 +179,9 @@ async function reconcileExercises(dayId: string, exercises: DraftExercise[]): Pr
   if (ee) throw ee
   const keptIds = exercises.filter((e) => e.id).map((e) => e.id as string)
   const removed = (existing ?? []).map((e) => e.id).filter((id) => !keptIds.includes(id))
+  // A hard delete, unlike days above, and deliberately: a logged set reaches its exercise via
+  // session_exercise.exercise_id -> exercise (0001), never via meso_day_exercise, so dropping a
+  // planned exercise destroys no history. meso_day_exercise is plan, not log.
   if (removed.length) {
     const { error } = await supabase.from('meso_day_exercise').delete().in('id', removed)
     if (error) throw error
@@ -132,22 +202,62 @@ async function reconcileExercises(dayId: string, exercises: DraftExercise[]): Pr
   }
 }
 
-/** Exactly one active meso per user. Unset all first (the partial unique index forbids two actives). */
-export async function setActiveMeso(userId: string, mesoId: string): Promise<void> {
+/** Activate a meso. `freshRun` stamps `activated_at`, which is what makes the day-scoped
+ * surfaces (deload cadence, "Previous workout") ignore everything logged before now --
+ * re-activating an old meso then behaves like a new block. Without it the meso is resumed:
+ * activated, window untouched, cadence intact.
+ *
+ * Two writes, no transaction: `one_active_meso_per_user` (0001) is a partial unique index
+ * `where is_active`, so the old active row must be cleared before the new one is set. If the
+ * second write fails the user is left with no active meso -- fail-safe rather than two actives,
+ * visibly so on the Mesos page, and fixed by clicking Activate again (both writes are
+ * idempotent). Making it atomic from the client would need an RPC, which is out of scope. */
+export async function setActiveMeso(userId: string, mesoId: string, opts?: { freshRun?: boolean }): Promise<void> {
+  // The sweep deliberately does not exclude soft-deleted rows. `deleteMeso` clears `is_active`,
+  // so they are normally already false and clearing them is a no-op (`meso` has no `updated_at`
+  // to disturb). But if a stray deleted-and-active row ever exists -- a `deleteMeso` that failed
+  // after the delete stamp, or a hand-edited row -- it occupies the unique index slot and would
+  // make the activation below fail with a uniqueness violation. Sweeping it heals that instead.
   const { error: e1 } = await supabase.from('meso').update({ is_active: false }).eq('user_id', userId)
   if (e1) throw e1
-  const { error: e2 } = await supabase.from('meso').update({ is_active: true }).eq('id', mesoId)
+  // `activated_at` is a client clock. It is compared against `workout_session.started_at`, which
+  // is a server `default now()`, so a device clock running fast puts the window slightly in the
+  // future and briefly hides a just-finished session from the panel and the deload count. Server
+  // time is unreachable from PostgREST without an RPC or a trigger (a column default does not
+  // fire on UPDATE), and the error is bounded by device skew, so client time it is.
+  const patch: { is_active: boolean; activated_at?: string } = { is_active: true }
+  if (opts?.freshRun) patch.activated_at = runStartStamp()
+  // Refuse to activate a soft-deleted meso. The builder still loads one from a stale
+  // /mesos/:id/edit URL (`getMesoFull` deliberately does not filter the meso row), and its
+  // "Save and activate" would otherwise set `is_active` on a row `getActiveMeso` ignores -- a
+  // silent no-op leaving the user with no active meso and no explanation. Reading the affected
+  // row back makes that loud. `user_id` is redundant with the `meso_self` RLS policy; it is here
+  // so the row count below means "no live meso of yours" rather than "RLS ate it".
+  const { data, error: e2 } = await supabase
+    .from('meso').update(patch).eq('id', mesoId).eq('user_id', userId).is('deleted_at', null).select('id')
   if (e2) throw e2
+  if (!data?.length) throw new Error(`setActiveMeso: no live meso ${mesoId} to activate`)
 }
 
+/** Soft delete: the row stays so its sessions, days and day labels survive, and History can
+ * still group by it. `is_active` is cleared for two reasons -- a deleted meso must not keep
+ * driving the workout screen, and the `one_active_meso_per_user` partial unique index
+ * (0001) is defined `where is_active`, so leaving it set would keep a dead meso occupying
+ * that slot. There is deliberately no undelete in the UI. */
 export async function deleteMeso(mesoId: string): Promise<void> {
-  const { error } = await supabase.from('meso').delete().eq('id', mesoId)
+  const { error } = await supabase
+    .from('meso')
+    .update({ deleted_at: new Date().toISOString(), is_active: false })
+    .eq('id', mesoId)
   if (error) throw error
 }
 
 export async function getActiveMeso(userId: string): Promise<MesoRow | null> {
+  // `deleted_at is null` is defensive -- `deleteMeso` clears `is_active`, so a deleted-and-active
+  // row should not exist. It makes one degrade to "no active meso" rather than driving the
+  // workout screen from a deleted plan.
   const { data, error } = await supabase
-    .from('meso').select('*').eq('user_id', userId).eq('is_active', true).maybeSingle()
+    .from('meso').select('*').eq('user_id', userId).eq('is_active', true).is('deleted_at', null).maybeSingle()
   if (error) throw error
   return data as MesoRow | null
 }

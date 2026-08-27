@@ -89,7 +89,7 @@ export function NoteEditorSheet({
       >
         <div className="mt-auto max-h-[85vh] w-full overflow-y-auto rounded-t-2xl bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white sm:mx-auto sm:max-w-2xl sm:rounded-b-2xl">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-lg font-bold">{note ? t('notes.edit') : t('notes.new')}</h2>
+            <h2 className="text-lg font-bold">{note ? t('notes.editTitle') : t('notes.newTitle')}</h2>
             <button type="button" onClick={onClose} className="shrink-0 text-sm text-slate-500 dark:text-slate-400">
               {t('exercises.cancel')}
             </button>
@@ -150,9 +150,8 @@ export function NoteEditorSheet({
       </div>
 
       {/* Sibling of the backdrop — see the note on this component. It also covers the whole
-          sheet, so the editor cannot be dismissed while it is open; that ordering matters,
-          because useBodyScrollLock captures the overflow it found on mount and unwinding the
-          two locks out of order would leave the page permanently unscrollable. */}
+          sheet, so the editor cannot be dismissed while the picker is open, which is what
+          keeps a typed body from being discarded behind it. */}
       {pickerOpen && (
         <ExercisePickerSheet
           onPick={(ex) => {

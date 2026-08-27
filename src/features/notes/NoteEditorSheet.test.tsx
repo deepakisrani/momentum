@@ -117,7 +117,7 @@ describe('NoteEditorSheet — saving', () => {
     render(
       <NoteEditorSheet userId="u1" note={note({ exerciseIds: ['e1'] })} onSaved={() => {}} onClose={onClose} />
     )
-    await user.click(await screen.findByRole('button', { name: 'Remove tag: Squat' }))
+    await user.click(await screen.findByRole('button', { name: 'Remove Tag: Squat' }))
     expect(screen.queryByText('Squat')).not.toBeInTheDocument()
     expect(onClose).not.toHaveBeenCalled() // the ✕ sits inside the click-to-close backdrop
 
@@ -152,14 +152,14 @@ describe('NoteEditorSheet — the picker must not dismiss the sheet', () => {
     render(<NoteEditorSheet userId="u1" onSaved={() => {}} onClose={onClose} />)
     await user.type(screen.getByRole('textbox', { name: 'Notes' }), 'wider grip next time')
 
-    await user.click(screen.getByRole('button', { name: '+ Tag exercise' }))
+    await user.click(screen.getByRole('button', { name: '+ Tag Exercise' }))
     await user.click(await screen.findByRole('button', { name: /Bench Press/ }))
 
     // The picker used to live inside the click-to-close backdrop, so this very click closed
     // the editor and threw the body away.
     expect(onClose).not.toHaveBeenCalled()
     expect(screen.getByRole('textbox', { name: 'Notes' })).toHaveValue('wider grip next time')
-    expect(screen.getByRole('button', { name: 'Remove tag: Bench Press' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Remove Tag: Bench Press' })).toBeInTheDocument()
 
     await user.click(saveBtn())
     expect(createNoteMock).toHaveBeenCalledWith('u1', {
@@ -171,7 +171,7 @@ describe('NoteEditorSheet — the picker must not dismiss the sheet', () => {
     const user = userEvent.setup()
     const onClose = vi.fn()
     const { container } = render(<NoteEditorSheet userId="u1" onSaved={() => {}} onClose={onClose} />)
-    await user.click(screen.getByRole('button', { name: '+ Tag exercise' }))
+    await user.click(screen.getByRole('button', { name: '+ Tag Exercise' }))
     await screen.findByRole('button', { name: /Bench Press/ })
 
     // Last fixed overlay in the DOM = the picker's backdrop (it is a sibling of the sheet's).
@@ -192,7 +192,7 @@ describe('NoteEditorSheet — the picker must not dismiss the sheet', () => {
     // The picker's own lock nests inside the sheet's. Unwound in this order it is correct;
     // it is only wrong if the sheet is torn down with the picker still open, which the
     // picker's full-screen overlay prevents.
-    await user.click(screen.getByRole('button', { name: '+ Tag exercise' }))
+    await user.click(screen.getByRole('button', { name: '+ Tag Exercise' }))
     await screen.findByRole('button', { name: /Bench Press/ })
     expect(document.body.style.overflow).toBe('hidden')
     await user.click(screen.getByRole('button', { name: /Bench Press/ }))
@@ -208,6 +208,8 @@ describe('NoteEditorSheet — backdrop dismissal', () => {
     const user = userEvent.setup()
     const onClose = vi.fn()
     const { container } = render(<NoteEditorSheet userId="u1" onSaved={() => {}} onClose={onClose} />)
+    // The sheet heading is prose ('New note'), not the button label ('New Note') -- the two
+    // roles use separate keys precisely so the title-case convention can hold for both.
     await user.click(screen.getByRole('heading', { name: 'New note' }))
     expect(onClose).not.toHaveBeenCalled()
 

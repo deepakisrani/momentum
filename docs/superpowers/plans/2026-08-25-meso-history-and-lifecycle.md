@@ -17,8 +17,9 @@
 | File | Responsibility |
 |---|---|
 | `supabase/migrations/0011_meso_soft_delete_and_activation.sql` | **Create.** Two nullable columns on `meso`. |
+| `supabase/migrations/0012_meso_day_soft_delete.sql` | **Create.** `deleted_at` on `meso_day` (Task 5A). |
 | `src/data/rows.ts` | **Modify.** Add `deleted_at` / `activated_at` to `MesoRow`. |
-| `src/data/mesoRepo.ts` | **Modify.** Soft delete, deleted-aware listings, activation stamping. |
+| `src/data/mesoRepo.ts` | **Modify.** Soft delete, deleted-aware listings, activation stamping, day soft delete + `getMesoDayLabels`. |
 | `src/data/sessionRepo.ts` | **Modify.** Nullable `mesoId`, `since` window, completed-session count. |
 | `src/data/exportRepo.ts` | **Modify.** Nullable `mesoId`. |
 | `src/features/history/historyScope.ts` | **Create.** Pure: switcher options, default scope, run split. |
@@ -125,14 +126,27 @@ export interface MesoRow {
 - [ ] **Step 2: Verify**
 
 Run: `npx tsc -b`
-Expected: no output. (Every `meso` query uses `select('*')`, so no call site needs changing —
-the new fields simply arrive. If `tsc` reports errors, report them rather than working around
-them.)
+Expected: **one error**, which you must also fix:
+
+```
+src/features/mesos/mesoDraft.test.ts(11,3): error TS2739: ... is missing the following
+properties from type 'MesoRow': deleted_at, activated_at
+```
+
+`MesoFull`'s test fixture is the only place in `src/` that constructs a `MesoRow` *literal*
+(everything else types a query result, so the new fields simply arrive). Add both fields to it:
+
+```ts
+  meso: { id: 'm1', user_id: 'u1', name: 'June', deload_every_n_microcycles: 4, is_active: true, notes: null, created_at: '2026-06-20T00:00:00Z', deleted_at: null, activated_at: null },
+```
+
+Then `npx tsc -b` is clean. If any *other* error appears, report it rather than working around
+it — it would mean another literal exists that this plan has not accounted for.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add src/data/rows.ts
+git add src/data/rows.ts src/features/mesos/mesoDraft.test.ts
 git commit -m "feat(data): meso row carries deleted_at and activated_at"
 ```
 
@@ -604,7 +618,7 @@ assumption `listMesoSessions` already relies on for `.order('started_at')`.
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/features/history/historyScope.test.ts`
-Expected: PASS — 17 tests.
+Expected: PASS — 16 tests. (Counted: scopeKey 1, historyScopeOptions 4, defaultHistoryScope 5, splitByRun 6.)
 
 - [ ] **Step 5: Think adversarially and add what you find**
 
@@ -622,6 +636,156 @@ choose not to fix, with reasoning.
 git add src/features/history/historyScope.ts src/features/history/historyScope.test.ts
 git commit -m "feat(history): pure scope options, default scope and run split"
 ```
+
+---
+
+## Task 5A: Soft-delete meso days
+
+**Added after the plan was written.** Task 3's implementer found that removing a day while
+*editing* a meso destroys that day's history — a live data-loss path with no deletion
+involved, and the same harm soft delete exists to prevent. The user approved fixing it here.
+
+**Files:**
+- Create: `supabase/migrations/0012_meso_day_soft_delete.sql`
+- Modify: `src/data/rows.ts`
+- Modify: `src/data/mesoRepo.ts`
+
+**Run this before Task 7.** Task 7 rewrites `HistoryPage`, and this task changes which
+function it should call for day labels.
+
+### The bug
+
+`updateMeso` (`src/data/mesoRepo.ts`, the "Reconcile days by id" block) hard-deletes the
+`meso_day` rows the user removed:
+
+```ts
+const { error } = await supabase.from('meso_day').delete().in('id', removedDayIds)
+```
+
+`workout_session.meso_day_id` is `on delete set null` (`0001`), so every past session logged
+on a removed day permanently loses its `meso_day_id`. Those sessions then show "—" instead of
+a day name, vanish from the day-filtered "Previous workout" panel, and stop counting toward the
+deload cadence (`getMesoDayStats` filters `.not('meso_day_id', 'is', null)`). The comment
+directly above that line claims the reconcile "preserves history: workout_session.meso_day_id"
+— true for days that are *kept*, actively false for days that are removed.
+
+- [ ] **Step 1: Write the migration**
+
+Create `supabase/migrations/0012_meso_day_soft_delete.sql`:
+
+```sql
+-- Removing a day while editing a meso used to destroy that day's history.
+--
+-- updateMeso hard-deleted the meso_day rows the user removed, and
+-- workout_session.meso_day_id is `on delete set null` -- so every past session logged on a
+-- removed day permanently lost its label, dropped out of the day-filtered "previous workout"
+-- panel, and stopped counting toward the deload cadence (getMesoDayStats requires a non-null
+-- meso_day_id). Reachable for any meso with logged history; no deletion of the meso involved.
+--
+-- Same remedy as meso.deleted_at in 0011: keep the row so history can still name the day, and
+-- hide it from the builder and from anything that plans future training.
+alter table meso_day add column if not exists deleted_at timestamptz;
+```
+
+`if not exists` matches `0006` and `0011`. No index and no RLS change: `meso_day_self`
+(`0002`) is an `EXISTS` subquery on the parent meso and already covers new columns, and
+`idx_meso_day_meso_id` (`0005`) already serves the lookup.
+
+- [ ] **Step 2: Add the field to `MesoDayRow`**
+
+In `src/data/rows.ts`, add to `MesoDayRow`:
+
+```ts
+  /** Set when the day was removed while editing the meso. The row stays so past sessions
+   * logged on this day keep their label. */
+  deleted_at: string | null
+```
+
+`npx tsc -b` will then fail on any `MesoDayRow` literal. Fix those fixtures by adding
+`deleted_at: null` — `src/features/mesos/mesoDraft.test.ts` is the known one; grep for others
+and report anything beyond a test fixture.
+
+- [ ] **Step 3: Soft-delete removed days**
+
+In `updateMeso`, replace the hard delete. Note the added filter on the *existing* rows query
+so already-deleted days are not re-stamped, and the corrected comment:
+
+```ts
+  // Reconcile days by id. Removed days are soft-deleted, not deleted: workout_session
+  // .meso_day_id is `on delete set null`, so a hard delete would strip the day label off
+  // every session ever logged on it (see 0012).
+  const { data: existingDays, error: ee } = await supabase
+    .from('meso_day').select('id').eq('meso_id', mesoId).is('deleted_at', null)
+  if (ee) throw ee
+  const keptDayIds = draft.days.filter((d) => d.id).map((d) => d.id as string)
+  const removedDayIds = (existingDays ?? []).map((d) => d.id).filter((id) => !keptDayIds.includes(id))
+  if (removedDayIds.length) {
+    const { error } = await supabase
+      .from('meso_day').update({ deleted_at: new Date().toISOString() }).in('id', removedDayIds)
+    if (error) throw error
+  }
+```
+
+Leave `reconcileExercises` alone. It hard-deletes `meso_day_exercise` rows, which is safe:
+history links to `exercise` through `session_exercise.exercise_id`, never through
+`meso_day_exercise`, so removing a planned exercise destroys no logged data. Add a one-line
+comment saying so, since the asymmetry with days is otherwise surprising.
+
+- [ ] **Step 4: Hide deleted days from planning, keep them for labels**
+
+`getMesoFull` feeds the builder, the workout-day chooser and Duplicate — all of which plan
+*future* training and must not show a removed day. Add the filter to its `meso_day` query:
+
+```ts
+    .from('meso_day').select('*').eq('meso_id', mesoId).is('deleted_at', null).order('order_index', { ascending: true })
+```
+
+History needs the opposite, so add a purpose-built function rather than a second flag:
+
+```ts
+/** Day id -> label for a meso, **including days the user has since removed**. History exists
+ * to name past sessions, and a session logged on a removed day still has that day's id -- so
+ * this is the one reader that must see soft-deleted days. Deliberately not `getMesoFull`:
+ * History needs labels, not the exercise plan, and over-fetching it invited exactly the
+ * confusion this split resolves. */
+export async function getMesoDayLabels(mesoId: string): Promise<Record<string, string>> {
+  const { data, error } = await supabase
+    .from('meso_day').select('id, label').eq('meso_id', mesoId)
+  if (error) throw error
+  return Object.fromEntries(((data ?? []) as { id: string; label: string }[]).map((d) => [d.id, d.label]))
+}
+```
+
+- [ ] **Step 5: Think about these and report**
+
+1. **Does any other reader of `meso_day` need the filter?** Grep every `from('meso_day')` and
+   every `meso_day_id` consumer. `getMesoDayTargets` takes a day id directly — what happens if
+   that day is soft-deleted while a session on it is in progress?
+2. **`startSession`** pre-creates `session_exercise` rows from `meso_day_exercise` for the
+   chosen day. Can a soft-deleted day be chosen? Trace where the chooser's day list comes from.
+3. **A day removed and then re-added with the same label** produces a new row with a new id.
+   Past sessions keep pointing at the old, soft-deleted row. Is that right? (I believe yes —
+   they were logged against the old plan — but say what the user will see.)
+4. **`order_index` on a soft-deleted day** is now never updated. Does anything sort a list that
+   mixes live and deleted days?
+
+- [ ] **Step 6: Verify**
+
+`npx tsc -b` clean; `npx vitest run` at its current count; `npm run lint` exactly
+`✖ 9 problems (3 errors, 6 warnings)`.
+
+- [ ] **Step 7: Commit**
+
+Two commits:
+
+```bash
+git add supabase/migrations/0012_meso_day_soft_delete.sql src/data/rows.ts src/features/mesos/mesoDraft.test.ts
+git commit -m "feat(db): soft-delete meso days so removing one keeps its history"
+
+git add src/data/mesoRepo.ts
+git commit -m "fix(meso): removing a day no longer strips its label off past sessions"
+```
+
 
 ---
 
@@ -689,7 +853,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
-import { listMesosForHistory, getMesoFull } from '../../data/mesoRepo'
+import { listMesosForHistory, getMesoDayLabels } from '../../data/mesoRepo'
 import { listMesoSessions, countCompletedSessions, type SessionSummary } from '../../data/sessionRepo'
 import { getMesoSetRows } from '../../data/exportRepo'
 import { mesoRowsToCsv } from './mesoCsv'
@@ -749,12 +913,14 @@ export function HistoryPage() {
         if (!ignore) { setDayLabels({}); setSessions(list) }
         return
       }
-      const [full, list] = await Promise.all([
-        getMesoFull(scope.mesoId),
+      // getMesoDayLabels, not getMesoFull: History must see days the user has since removed,
+      // or a session logged on one shows no label. See Task 5A.
+      const [labels, list] = await Promise.all([
+        getMesoDayLabels(scope.mesoId),
         listMesoSessions(userId, scope.mesoId),
       ])
       if (!ignore) {
-        setDayLabels(Object.fromEntries(full.days.map((d) => [d.id, d.label])))
+        setDayLabels(labels)
         setSessions(list)
       }
     })().catch(() => { if (!ignore) { setError(true); setSessions([]) } })

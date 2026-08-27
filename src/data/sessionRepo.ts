@@ -121,9 +121,13 @@ export interface MesoDayStat {
   sinceLastDeload: number
 }
 
-/** Per meso_day: most recent completed-session date + sessions since the last actual deload. */
-export async function getMesoDayStats(userId: string, mesoId: string): Promise<Record<string, MesoDayStat>> {
-  const { data, error } = await supabase
+/** Per meso_day: most recent completed-session date + sessions since the last actual deload.
+ *
+ * `since` is the meso's `activated_at`. It matters most for the deload count: without it,
+ * re-activating a meso abandoned four sessions past its last deload immediately reports
+ * "Deload scheduled" on the strength of months-old sessions. */
+export async function getMesoDayStats(userId: string, mesoId: string, since?: string | null): Promise<Record<string, MesoDayStat>> {
+  let q = supabase
     .from('workout_session')
     .select('meso_day_id, started_at, ended_at, is_deload')
     .eq('user_id', userId)
@@ -131,6 +135,8 @@ export async function getMesoDayStats(userId: string, mesoId: string): Promise<R
     .eq('status', 'completed')
     .not('meso_day_id', 'is', null)
     .order('started_at', { ascending: false })
+  if (since) q = q.gte('started_at', since)
+  const { data, error } = await q
   if (error) throw error
   const byDay: Record<string, { isDeload: boolean }[]> = {}
   const lastDate: Record<string, string> = {}
@@ -183,20 +189,36 @@ export interface SessionSummary {
   exerciseCount: number
 }
 
-/** Completed sessions for a meso, newest first. Optional same-day filter. */
+/** Completed sessions, newest first.
+ *
+ * `mesoId: null` is the "unassigned" bucket -- sessions whose meso was hard-deleted before
+ * soft delete existed, or which were logged while no meso was active. They are otherwise
+ * unreachable in the app.
+ *
+ * `since` is the activation window: pass a meso's `activated_at` to see only its current
+ * run. History deliberately passes nothing, so it can show every run.
+ *
+ * The `if (opts?.since)` guard must stay conditional. postgrest-js interpolates the value
+ * straight into the filter, so `.gte('started_at', null)` sends `started_at=gte.null`, and
+ * PostgREST only reads `null` as SQL NULL for the `is` operator -- every other operator
+ * binds the four characters as an unknown-typed literal, which Postgres then fails to cast
+ * to timestamptz (400, "invalid input syntax"). An unconditional `.gte` would therefore
+ * break the previous-workout panel for every meso that has never been re-activated.
+ * Truthiness, not `!= null`, so an empty string is skipped too. */
 export async function listMesoSessions(
   userId: string,
-  mesoId: string,
-  opts?: { mesoDayId?: string },
+  mesoId: string | null,
+  opts?: { mesoDayId?: string; since?: string | null },
 ): Promise<SessionSummary[]> {
   let q = supabase
     .from('workout_session')
     .select('id, meso_day_id, started_at, ended_at, is_deload, session_exercise(count)')
     .eq('user_id', userId)
-    .eq('meso_id', mesoId)
     .eq('status', 'completed')
     .order('started_at', { ascending: false })
+  q = mesoId === null ? q.is('meso_id', null) : q.eq('meso_id', mesoId)
   if (opts?.mesoDayId) q = q.eq('meso_day_id', opts.mesoDayId)
+  if (opts?.since) q = q.gte('started_at', opts.since)
   const { data, error } = await q
   if (error) throw error
   type Raw = { id: string; meso_day_id: string | null; started_at: string; ended_at: string | null; is_deload: boolean; session_exercise: { count: number }[] }
@@ -208,4 +230,24 @@ export async function listMesoSessions(
     is_deload: r.is_deload,
     exerciseCount: Number(r.session_exercise?.[0]?.count ?? 0),
   }))
+}
+
+/** How many completed sessions belong to a meso -- or to no meso at all when `mesoId` is
+ * null. Two callers: History asks about null to decide whether to offer an "Unassigned"
+ * entry, and the Mesos page asks about a meso to decide whether activating it needs the
+ * fresh-run/resume question at all (a meso nobody has trained has nothing to preserve).
+ *
+ * `head: true` makes this a HEAD request, so no rows cross the wire; the count arrives in
+ * the Content-Range header. It is an RLS-scoped count -- PostgREST builds it from the same
+ * read plan, so it can never see rows the user cannot read. */
+export async function countCompletedSessions(userId: string, mesoId: string | null): Promise<number> {
+  let q = supabase
+    .from('workout_session')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'completed')
+  q = mesoId === null ? q.is('meso_id', null) : q.eq('meso_id', mesoId)
+  const { count, error } = await q
+  if (error) throw error
+  return count ?? 0
 }

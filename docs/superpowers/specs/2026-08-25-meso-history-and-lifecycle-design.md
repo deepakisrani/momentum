@@ -83,6 +83,62 @@ stated rationale for FK indexes does not apply. Adding one would be cargo-cult.
 Nothing needs to guard the meso builder against a soft-deleted id: it is unreachable from
 the Mesos list, so only a stale URL could reach it, and editing a dead plan harms nothing.
 
+## Part A2 — soft-delete meso days too
+
+**Found during implementation, after the design was approved.** Soft-deleting the *meso* closes
+one door onto orphaned history; editing a meso closes on another. `updateMeso` hard-deletes the
+`meso_day` rows the user removed, and `workout_session.meso_day_id` is `on delete set null`, so
+removing a day permanently strips the day label off every session ever logged on it — those
+sessions then show "—", vanish from the day-filtered "Previous workout" panel, and stop counting
+toward the deload cadence. No deletion of the meso is involved; restructuring a trained meso is
+enough. The comment above that code claims the reconcile "preserves history:
+workout_session.meso_day_id", which is true for kept days and false for removed ones.
+
+Same remedy, one column: `meso_day.deleted_at` (migration `0012`). Removed days are stamped
+rather than deleted. `getMesoFull` — which feeds the builder, the workout-day chooser and
+Duplicate, all of which plan *future* training — filters them out. History reads a new
+`getMesoDayLabels(mesoId)` that deliberately includes them, because naming a past session is
+exactly the case where a removed day still matters.
+
+`meso_day_exercise` stays a hard delete: history reaches an exercise through
+`session_exercise.exercise_id`, never through the plan row, so removing a planned exercise
+destroys no logged data.
+
+## Part C2 — `activated_at` is populated everywhere
+
+**Added after implementation, in response to a question about existing mesos.** `0011` adds the
+column nullable with no backfill, which is behaviourally right — `NULL` means "no window", i.e.
+today's behaviour — but it left two loose ends.
+
+First, whether a *brand-new* meso got a stamp depended on how it was activated: the builder's
+"Save & Activate" stamped it, the Mesos list's "Make active" did not (zero sessions means no
+dialog, and that path passes no options). Harmless, since a meso with no workouts filters the
+same empty set either way, but inconsistent.
+
+Second, `NULL`-means-the-beginning-of-time is an implicit convention, and the two `if (since)`
+guards in `sessionRepo` are the only thing standing between it and a silent failure: PostgREST
+serialises `.gte(col, null)` as `started_at=gte.null`, Postgres fails the cast, and
+`PreviousWorkoutPanel` swallows the resulting 400 into an empty sheet.
+
+So: **`createMeso` stamps `activated_at`**, and migration `0013` backfills existing rows with
+each meso's **first completed session**, falling back to its `created_at` where it has never
+been trained. The column is then populated on every row, all activation paths agree, and the
+guards become defence rather than load-bearing.
+
+`min(started_at)` and `created_at` are **not** interchangeable here. The one-off June import
+(`scripts/import-june26-meso.sql`) backdates `started_at` while the meso row takes a default
+`created_at` of the import moment, so for that meso the sessions predate the row — a `created_at`
+backfill would have filed real workouts under "Earlier runs". `created_at` is used only where
+there are no sessions to be wrong about.
+
+Both writes are backdated one minute via a shared `runStartStamp()`. The stamp comes from a
+client clock but is compared against server-assigned `started_at`, so on a fast device an
+exact-now stamp would file the very next workout outside its own run permanently.
+
+The column is deliberately **not** made `NOT NULL`: that would ripple into `MesoRow`,
+`splitByRun` and the guards, all of which are tested, and it would remove the ability for a
+future feature to mean "no window" at all. Populated-in-practice is the goal, not enforced.
+
 ## Part B — History switcher and Unassigned
 
 `listMesoSessions(userId, mesoId, …)` and `getMesoSetRows(userId, mesoId)` widen `mesoId` to
@@ -194,8 +250,15 @@ sentences such as `mesos.deleteConfirm`.
 - **Re-activating a never-trained meso:** silent, no dialog, no stamp.
 - **A meso with sessions both before and after its `activated_at`:** the intended case — the
   panel and cadence see only the newer ones; History shows both groups.
-- **`activated_at` in the future** (clock skew): the window would hide everything; not
-  guarded, since the value is only ever written as `now()` server-side.
+- **`activated_at` in the future** (clock skew): **written from the client clock, not the
+  server.** PostgREST cannot evaluate `now()` in a PATCH body and a column `default` does not
+  fire on UPDATE, so server time would need an RPC or a `before update` trigger. This matters
+  asymmetrically: `deleted_at` is only ever read as `is null`, so skew is irrelevant there, but
+  `activated_at` is compared with `.gte` against `workout_session.started_at`, which *is*
+  server-side (`default now()`). A device clock running fast therefore puts the window slightly
+  in the future and can briefly hide a just-finished session from "Previous workout" and the
+  deload count; a slow clock only widens the window harmlessly. Bounded by device skew — seconds
+  on an NTP-synced phone — so accepted rather than guarded.
 - **CSV filename for Unassigned:** slug `unassigned`.
 - **Progress "This meso" range:** unchanged and unwindowed — it covers all runs of the active
   meso. Consistent with the export.

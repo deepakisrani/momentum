@@ -1,0 +1,14 @@
+-- Removing a day while editing a meso used to destroy that day's history.
+--
+-- updateMeso hard-deleted the meso_day rows the user removed, and
+-- workout_session.meso_day_id is `on delete set null` -- so every past session logged on a
+-- removed day permanently lost its label, dropped out of the day-filtered "previous workout"
+-- panel, and stopped counting toward the deload cadence (getMesoDayStats requires a non-null
+-- meso_day_id). Reachable for any meso with logged history; no deletion of the meso involved.
+--
+-- The hard delete also cascaded to meso_day_exercise (0001), so a day removed while a session
+-- on it was in progress lost its targets mid-workout. Keeping the row keeps those too.
+--
+-- Same remedy as meso.deleted_at in 0011: keep the row so history can still name the day, and
+-- hide it from the builder and from anything that plans future training.
+alter table meso_day add column if not exists deleted_at timestamptz;
