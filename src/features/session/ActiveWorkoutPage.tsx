@@ -51,7 +51,7 @@ export function ActiveWorkoutPage() {
     void getCachedExercises(userId).then((cached) => {
       if (cached) setExMap(Object.fromEntries(cached.map((e) => [e.id, e])))
     })
-    (async () => {
+    ;(async () => {
       try {
         const [meso, exList, existing] = await Promise.all([getActiveMeso(userId), listExercises(userId), getActiveSession(userId)])
         setActiveMeso(meso)
