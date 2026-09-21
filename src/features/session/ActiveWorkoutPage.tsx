@@ -6,7 +6,7 @@ import { useProfileData } from '../profile/useProfileData'
 import { getActiveMeso, getMesoFull, getMesoDayTargets } from '../../data/mesoRepo'
 import { getActiveSession, startSession, getSessionFull, endSession, setSessionDeload, addSessionExercise, removeSessionExercise, getMesoDayStats, type SessionFull } from '../../data/sessionRepo'
 import { isDeloadDue } from '../../domain/scheduling'
-import { listExercises } from '../../data/exerciseRepo'
+import { getCachedExercises, listExercises } from '../../data/exerciseRepo'
 import type { ExerciseRow, MesoRow } from '../../data/rows'
 import type { MesoFull } from '../mesos/mesoDraft'
 import { useElapsed } from './useElapsed'
@@ -47,9 +47,13 @@ export function ActiveWorkoutPage() {
   }, [])
 
   useEffect(() => {
+    // Populate names from the per-user cache while the authoritative request is in flight.
+    void getCachedExercises(userId).then((cached) => {
+      if (cached) setExMap(Object.fromEntries(cached.map((e) => [e.id, e])))
+    })
     (async () => {
       try {
-        const [meso, exList, existing] = await Promise.all([getActiveMeso(userId), listExercises(), getActiveSession(userId)])
+        const [meso, exList, existing] = await Promise.all([getActiveMeso(userId), listExercises(userId), getActiveSession(userId)])
         setActiveMeso(meso)
         setExMap(Object.fromEntries(exList.map((e) => [e.id, e])))
         if (meso) {

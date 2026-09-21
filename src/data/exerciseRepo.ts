@@ -1,11 +1,24 @@
 import { supabase } from '../lib/supabase'
+import { readLocalCache, writeLocalCache } from '../lib/localCache'
 import type { ExerciseRow } from './rows'
 import type { Mechanic } from '../domain/types'
 
-export async function listExercises(): Promise<ExerciseRow[]> {
+function cacheKey(userId: string): string {
+  return `exercises:v1:${userId}`
+}
+
+/** Cached exercise data is per user: the shared library is global, but custom exercises are not. */
+export async function getCachedExercises(userId: string): Promise<ExerciseRow[] | null> {
+  return readLocalCache<ExerciseRow[]>(cacheKey(userId))
+}
+
+/** Always reads Supabase, then refreshes the on-device cache when a user id is supplied. */
+export async function listExercises(userId?: string): Promise<ExerciseRow[]> {
   const { data, error } = await supabase.from('exercise').select('*').order('name', { ascending: true })
   if (error) throw error
-  return (data ?? []) as ExerciseRow[]
+  const exercises = (data ?? []) as ExerciseRow[]
+  if (userId) void writeLocalCache(cacheKey(userId), exercises)
+  return exercises
 }
 
 export interface NewExercise {

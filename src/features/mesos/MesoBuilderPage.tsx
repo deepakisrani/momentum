@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
 import { getMesoFull, saveMeso, setActiveMeso } from '../../data/mesoRepo'
-import { listExercises } from '../../data/exerciseRepo'
+import { getCachedExercises, listExercises } from '../../data/exerciseRepo'
 import type { ExerciseRow } from '../../data/rows'
 import { blankMeso, draftFromFull, validateMeso, moveItem, type MesoDraft, type DraftDay } from './mesoDraft'
 import { ExercisePickerSheet } from './ExercisePickerSheet'
@@ -29,8 +29,11 @@ export function MesoBuilderPage() {
   const [wasActive, setWasActive] = useState(false)
 
   useEffect(() => {
-    listExercises().then((list) => setExMap(Object.fromEntries(list.map((e) => [e.id, e])))).catch(() => {})
-  }, [])
+    void getCachedExercises(userId).then((cached) => {
+      if (cached) setExMap(Object.fromEntries(cached.map((e) => [e.id, e])))
+    })
+    listExercises(userId).then((list) => setExMap(Object.fromEntries(list.map((e) => [e.id, e])))).catch(() => {})
+  }, [userId])
 
   useEffect(() => {
     if (!id) return

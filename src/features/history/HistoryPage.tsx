@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
 import { listMesosForHistory, getMesoDayLabels } from '../../data/mesoRepo'
-import { listMesoSessions, countCompletedSessions, type SessionSummary } from '../../data/sessionRepo'
+import { countCompletedSessions, getMesoSessionPage, type SessionCursor, type SessionPage, type SessionSummary } from '../../data/sessionRepo'
 import { getMesoSetRows } from '../../data/exportRepo'
 import { mesoRowsToCsv } from './mesoCsv'
 import { downloadTextFile } from '../../lib/download'
@@ -13,9 +13,16 @@ import { shortDate, localIsoDate } from './historyFormat'
 import {
   defaultHistoryScope, historyScopeOptions, scopeKey, splitByRun, type HistoryScope,
 } from './historyScope'
+import { useHistoryPageSize } from '../../prefs/historyPageSizePref'
+import { readLocalCache, writeLocalCache } from '../../lib/localCache'
 
 /** Filename slug for the unassigned bucket, which has no meso name to slugify. */
 const UNASSIGNED_SLUG = 'unassigned'
+
+function historyCacheKey(userId: string, scope: HistoryScope, pageSize: number, cursor?: SessionCursor | null): string {
+  const position = cursor ? `${cursor.startedAt}:${cursor.id}` : 'first'
+  return `history:v1:${userId}:${scopeKey(scope)}:${pageSize}:${position}`
+}
 
 /** History is scoped by the switcher, never by which meso happens to be active. Before that,
  * creating and activating a new meso made every earlier block unreachable *and* unexportable
@@ -35,6 +42,10 @@ export function HistoryPage() {
   const [scopeError, setScopeError] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState(false)
+  const [nextCursor, setNextCursor] = useState<SessionCursor | null>(null)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const requestVersion = useRef(0)
+  const pageSize = useHistoryPageSize()
 
   // What the user can look at: every meso including soft-deleted ones (keeping their log
   // readable is the point of soft-deleting), plus whether any workout belongs to no meso.
@@ -58,35 +69,79 @@ export function HistoryPage() {
     return () => { ignore = true }
   }, [userId])
 
-  // Sessions for the selected scope. Runs only once a scope exists, so mount does not fire a
-  // throwaway request; `scope` is only ever set from the effect above or the switcher, so this
-  // fires exactly once per selection. The `ignore` flag is what makes overlapping requests
-  // safe: React runs the previous cleanup before this body, so a slow response for an
-  // abandoned scope can no longer write to state (same guard PreviousWorkoutPanel uses).
+  // Sessions for the selected scope. A cached page renders first on repeat visits, then the
+  // matching server page replaces it. Cache is never authoritative: it only avoids making a
+  // returning user stare at a blank History screen while Supabase revalidates the data.
   useEffect(() => {
     if (!scope) return
     let ignore = false
+    const version = ++requestVersion.current
+    let freshApplied = false
     setSessions(null)
+    setNextCursor(null)
     setScopeError(false)
     setExportError(false)
+    const cacheKey = historyCacheKey(userId, scope, pageSize)
+    void readLocalCache<SessionPage>(cacheKey).then((cached) => {
+      if (!ignore && !freshApplied && cached) {
+        setSessions(cached.sessions)
+        setNextCursor(cached.nextCursor)
+      }
+    })
     ;(async () => {
       if (scope.kind === 'unassigned') {
-        const list = await listMesoSessions(userId, null)
+        const page = await getMesoSessionPage(userId, null, pageSize)
+        void writeLocalCache(cacheKey, page)
         // No meso, so no day labels: these sessions lost their meso_day_id long ago.
-        if (!ignore) { setDayLabels({}); setSessions(list) }
+        if (!ignore && requestVersion.current === version) {
+          freshApplied = true
+          setDayLabels({}); setSessions(page.sessions); setNextCursor(page.nextCursor)
+        }
         return
       }
       // getMesoDayLabels, not getMesoFull: History must see days the user has since removed,
       // or a session logged on one shows no label.
-      const [labels, list] = await Promise.all([
+      const [labels, page] = await Promise.all([
         getMesoDayLabels(scope.mesoId),
-        listMesoSessions(userId, scope.mesoId),
+        getMesoSessionPage(userId, scope.mesoId, pageSize),
       ])
+      void writeLocalCache(cacheKey, page)
       // Set together so no render ever pairs one scope's sessions with another's labels.
-      if (!ignore) { setDayLabels(labels); setSessions(list) }
+      if (!ignore && requestVersion.current === version) {
+        freshApplied = true
+        setDayLabels(labels); setSessions(page.sessions); setNextCursor(page.nextCursor)
+      }
     })().catch(() => { if (!ignore) { setScopeError(true); setSessions([]) } })
     return () => { ignore = true }
-  }, [userId, scope])
+  }, [userId, scope, pageSize])
+
+  async function loadMore(): Promise<void> {
+    if (!scope || !nextCursor || loadingMore || sessions === null) return
+    const version = requestVersion.current
+    const cursor = nextCursor
+    const start = sessions.length
+    const cacheKey = historyCacheKey(userId, scope, pageSize, cursor)
+    setLoadingMore(true)
+    try {
+      const cached = await readLocalCache<SessionPage>(cacheKey)
+      if (cached && requestVersion.current === version) {
+        setSessions((current) => current ? [...current, ...cached.sessions] : current)
+        setNextCursor(cached.nextCursor)
+      }
+      const page = await getMesoSessionPage(userId, scope.kind === 'meso' ? scope.mesoId : null, pageSize, cursor)
+      void writeLocalCache(cacheKey, page)
+      if (requestVersion.current === version) {
+        // Replace a cached page rather than appending it twice. A completed session is immutable,
+        // but this still covers a stale cache after an administrative data change.
+        setSessions((current) => current ? [...current.slice(0, start), ...page.sessions] : current)
+        setNextCursor(page.nextCursor)
+      }
+    } catch {
+      if (requestVersion.current === version) setScopeError(true)
+    } finally {
+      if (requestVersion.current === version) setLoadingMore(false)
+    }
+  }
 
   const options = useMemo(() => historyScopeOptions(mesos ?? [], hasUnassigned), [mesos, hasUnassigned])
   const selectedMeso = scope?.kind === 'meso'
@@ -189,6 +244,15 @@ export function HistoryPage() {
                   heading={t('history.earlier')}
                   onOpen={(id) => navigate(`/history/${id}`)}
                 />
+                {nextCursor && (
+                  <button
+                    onClick={() => void loadMore()}
+                    disabled={loadingMore}
+                    className="w-full rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold disabled:opacity-60 dark:bg-[#1b2030]"
+                  >
+                    {loadingMore ? t('history.loadingMore') : t('history.loadMore')}
+                  </button>
+                )}
               </>
             )}
           </>

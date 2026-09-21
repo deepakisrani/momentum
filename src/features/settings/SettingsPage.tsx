@@ -9,10 +9,12 @@ import { useTheme } from '../../theme/ThemeProvider'
 import { useChartCurve, setChartCurve } from '../../prefs/chartPref'
 import { useDeloadPct, setDeloadPct } from '../../prefs/deloadPref'
 import { useProteinPerKg, setProteinPerKg } from '../../prefs/proteinPref'
+import { HISTORY_PAGE_SIZES, setHistoryPageSize, useHistoryPageSize } from '../../prefs/historyPageSizePref'
 import { ConfirmModal } from '../../components/ConfirmModal'
 import type { Units } from '../../domain/types'
 import { InviteModal } from './InviteModal'
 import { useInstall } from '../../pwa/useInstall'
+import { clearLocalCache } from '../../lib/localCache'
 
 const OWNER_EMAIL = 'd3epak91@gmail.com'
 
@@ -34,6 +36,7 @@ export function SettingsPage() {
   const isCurved = curve === 'smooth'
   const deloadPct = useDeloadPct()
   const proteinPerKg = useProteinPerKg()
+  const historyPageSize = useHistoryPageSize()
   const stepProtein = (dir: 1 | -1) => {
     if (proteinPerKg == null) { if (dir === 1) setProteinPerKg(1.6) } // Auto -> 1.6
     else {
@@ -51,6 +54,7 @@ export function SettingsPage() {
     setError(null)
     try {
       await resetAccount(session.user.id)
+      await clearLocalCache()
       await reload()
       navigate('/onboarding', { replace: true })
     } catch (err) {
@@ -93,6 +97,19 @@ export function SettingsPage() {
               </button>
             ))}
           </div>
+        </section>
+
+        <section className="rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">
+          <h2 className="mb-1 text-sm font-semibold">{t('settings.historyPageSize')}</h2>
+          <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">{t('settings.historyPageSizeNote')}</p>
+          <select
+            value={historyPageSize}
+            onChange={(e) => setHistoryPageSize(Number(e.target.value))}
+            aria-label={t('settings.historyPageSize')}
+            className="rounded-lg bg-white px-3 py-2 text-sm font-semibold dark:bg-[#0f1115]"
+          >
+            {HISTORY_PAGE_SIZES.map((size) => <option key={size} value={size}>{t('settings.historyPageSizeOption').replace('{count}', String(size))}</option>)}
+          </select>
         </section>
 
         <section className="rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">

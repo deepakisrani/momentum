@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
-import { listExercises } from '../../data/exerciseRepo'
+import { getCachedExercises, listExercises } from '../../data/exerciseRepo'
 import type { ExerciseRow } from '../../data/rows'
 import type { Mechanic } from '../../domain/types'
 import { filterExercises, distinctMuscleGroups, distinctEquipment } from './filterExercises'
@@ -23,11 +23,14 @@ export function ExerciseLibraryPage() {
   const [showAdd, setShowAdd] = useState(false)
 
   useEffect(() => {
-    listExercises()
+    // The cache makes the library usable immediately on repeat visits. The network result
+    // remains authoritative, so custom exercises created on another device still appear.
+    void getCachedExercises(userId).then((cached) => { if (cached) setAll(cached) })
+    listExercises(userId)
       .then(setAll)
       .catch((e) => setError((e as Error).message))
       .finally(() => setLoading(false))
-  }, [])
+  }, [userId])
 
   const muscleOptions = useMemo(() => distinctMuscleGroups(all), [all])
   const equipmentOptions = useMemo(() => distinctEquipment(all), [all])

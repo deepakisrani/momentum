@@ -189,6 +189,61 @@ export interface SessionSummary {
   exerciseCount: number
 }
 
+export interface SessionCursor {
+  startedAt: string
+  id: string
+}
+
+export interface SessionPage {
+  sessions: SessionSummary[]
+  nextCursor: SessionCursor | null
+}
+
+function mapSessionSummaries(data: unknown[]): SessionSummary[] {
+  type Raw = { id: string; meso_day_id: string | null; started_at: string; ended_at: string | null; is_deload: boolean; session_exercise: { count: number }[] }
+  return (data as Raw[]).map((r) => ({
+    id: r.id,
+    meso_day_id: r.meso_day_id,
+    started_at: r.started_at,
+    ended_at: r.ended_at,
+    is_deload: r.is_deload,
+    exerciseCount: Number(r.session_exercise?.[0]?.count ?? 0),
+  }))
+}
+
+/** One stable, newest-first History page. The cursor is the final row's sort tuple, so new
+ * completed workouts cannot shift, skip, or duplicate rows in a later page. */
+export async function getMesoSessionPage(
+  userId: string,
+  mesoId: string | null,
+  pageSize: number,
+  cursor?: SessionCursor | null,
+): Promise<SessionPage> {
+  let q = supabase
+    .from('workout_session')
+    .select('id, meso_day_id, started_at, ended_at, is_deload, session_exercise(count)')
+    .eq('user_id', userId)
+    .eq('status', 'completed')
+    .order('started_at', { ascending: false })
+    .order('id', { ascending: false })
+    .limit(pageSize + 1)
+  q = mesoId === null ? q.is('meso_id', null) : q.eq('meso_id', mesoId)
+  if (cursor) {
+    // `(started_at, id) < cursor` expressed in PostgREST's filter grammar.
+    q = q.or(`started_at.lt.${cursor.startedAt},and(started_at.eq.${cursor.startedAt},id.lt.${cursor.id})`)
+  }
+  const { data, error } = await q
+  if (error) throw error
+  const all = mapSessionSummaries((data ?? []) as unknown[])
+  const hasMore = all.length > pageSize
+  const sessions = hasMore ? all.slice(0, pageSize) : all
+  const final = sessions.length ? sessions[sessions.length - 1] : undefined
+  return {
+    sessions,
+    nextCursor: hasMore && final ? { startedAt: final.started_at, id: final.id } : null,
+  }
+}
+
 /** Completed sessions, newest first.
  *
  * `mesoId: null` is the "unassigned" bucket -- sessions whose meso was hard-deleted before
@@ -221,15 +276,7 @@ export async function listMesoSessions(
   if (opts?.since) q = q.gte('started_at', opts.since)
   const { data, error } = await q
   if (error) throw error
-  type Raw = { id: string; meso_day_id: string | null; started_at: string; ended_at: string | null; is_deload: boolean; session_exercise: { count: number }[] }
-  return ((data ?? []) as Raw[]).map((r) => ({
-    id: r.id,
-    meso_day_id: r.meso_day_id,
-    started_at: r.started_at,
-    ended_at: r.ended_at,
-    is_deload: r.is_deload,
-    exerciseCount: Number(r.session_exercise?.[0]?.count ?? 0),
-  }))
+  return mapSessionSummaries((data ?? []) as unknown[])
 }
 
 /** How many completed sessions belong to a meso -- or to no meso at all when `mesoId` is

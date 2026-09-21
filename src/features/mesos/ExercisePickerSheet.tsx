@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useT } from '../../i18n/I18nProvider'
 import { useAuth } from '../../auth/useAuth'
-import { listExercises } from '../../data/exerciseRepo'
+import { getCachedExercises, listExercises } from '../../data/exerciseRepo'
 import { filterExercises, distinctMuscleGroups, distinctEquipment } from '../exercises/filterExercises'
 import { AddExerciseForm } from '../exercises/AddExerciseForm'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
@@ -17,7 +17,10 @@ export function ExercisePickerSheet({ onPick, onClose }: { onPick: (ex: Exercise
   const [muscleGroup, setMuscleGroup] = useState<string | 'all'>('all')
   const [showAdd, setShowAdd] = useState(false)
 
-  useEffect(() => { listExercises().then(setAll).catch(() => {}) }, [])
+  useEffect(() => {
+    void getCachedExercises(userId).then((cached) => { if (cached) setAll(cached) })
+    listExercises(userId).then(setAll).catch(() => {})
+  }, [userId])
 
   const muscles = useMemo(() => distinctMuscleGroups(all), [all])
   const equipment = useMemo(() => distinctEquipment(all), [all])
