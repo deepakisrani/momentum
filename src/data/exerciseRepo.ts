@@ -12,6 +12,13 @@ export async function getCachedExercises(userId: string): Promise<ExerciseRow[] 
   return readLocalCache<ExerciseRow[]>(cacheKey(userId))
 }
 
+export async function getCachedExercisesByIds(userId: string, ids: string[]): Promise<Record<string, ExerciseRow>> {
+  const exercises = await getCachedExercises(userId)
+  if (!exercises) return {}
+  const wanted = new Set(ids)
+  return Object.fromEntries(exercises.filter((exercise) => wanted.has(exercise.id)).map((exercise) => [exercise.id, exercise]))
+}
+
 /** Always reads Supabase, then refreshes the on-device cache when a user id is supplied. */
 export async function listExercises(userId?: string): Promise<ExerciseRow[]> {
   const { data, error } = await supabase.from('exercise').select('*').order('name', { ascending: true })

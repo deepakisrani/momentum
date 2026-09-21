@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useT } from '../../i18n/I18nProvider'
-import { listMesoSessions, getSessionFull, type SessionSummary, type SessionFull } from '../../data/sessionRepo'
-import { getExercisesByIds } from '../../data/exerciseRepo'
+import { listMesoSessions, getCachedCompletedSession, cacheCompletedSession, getSessionFull, type SessionSummary, type SessionFull } from '../../data/sessionRepo'
+import { getCachedExercisesByIds, getExercisesByIds } from '../../data/exerciseRepo'
 import type { ExerciseRow } from '../../data/rows'
 import { SessionDetailView } from './SessionDetailView'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
@@ -51,14 +51,24 @@ export function PreviousWorkoutPanel({ userId, mesoId, mesoDayId, dayLabel, sinc
   useEffect(() => {
     if (!sessions || !sessions.length) { setFull(null); return }
     let ignore = false
+    let freshApplied = false
+    let cacheShown = false
     const s = sessions[index]
     setFull(null); setDetailError(false)
-    getSessionFull(s.id).then(async (f) => {
-      const ex = await getExercisesByIds(f.exercises.map((e) => e.exercise_id))
-      if (!ignore) { setFull(f); setExById(ex) }
-    }).catch(() => { if (!ignore) setDetailError(true) })
+    // Completed session snapshots are immutable. Render the on-device copy first, then replace
+    // it with Supabase's response so a cache miss/stale entry never becomes the source of truth.
+    void getCachedCompletedSession(userId, s.id).then(async (cached) => {
+      if (!cached) return
+      const exercises = await getCachedExercisesByIds(userId, cached.exercises.map((exercise) => exercise.exercise_id))
+      if (!ignore && !freshApplied) { cacheShown = true; setDetailError(false); setFull(cached); setExById(exercises) }
+    })
+    getSessionFull(s.id).then(async (full) => {
+      const exercises = await getExercisesByIds(full.exercises.map((exercise) => exercise.exercise_id))
+      cacheCompletedSession(userId, full)
+      if (!ignore) { freshApplied = true; setFull(full); setExById(exercises) }
+    }).catch(() => { if (!ignore && !cacheShown) setDetailError(true) })
     return () => { ignore = true }
-  }, [sessions, index])
+  }, [sessions, index, userId])
 
   const current = sessions?.[index]
 

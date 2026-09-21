@@ -4,7 +4,7 @@ import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
 import { useProfileData } from '../profile/useProfileData'
 import { getActiveMeso, getMesoFull, getMesoDayTargets } from '../../data/mesoRepo'
-import { getActiveSession, startSession, getSessionFull, endSession, setSessionDeload, addSessionExercise, removeSessionExercise, getMesoDayStats, type SessionFull } from '../../data/sessionRepo'
+import { getActiveSession, startSession, getSessionFull, endSession, setSessionDeload, addSessionExercise, removeSessionExercise, getMesoDayStats, type LoggedSetFull, type SessionFull } from '../../data/sessionRepo'
 import { isDeloadDue } from '../../domain/scheduling'
 import { getCachedExercises, listExercises } from '../../data/exerciseRepo'
 import type { ExerciseRow, MesoRow } from '../../data/rows'
@@ -131,6 +131,36 @@ export function ActiveWorkoutPage() {
     }
   }
 
+  // A set mutation has already succeeded in Supabase by the time these run. Updating the
+  // in-memory session avoids the old four-read `loadSession` round trip after every tap/blur.
+  function addLoggedSet(set: LoggedSetFull) {
+    setFull((current) => current && ({
+      ...current,
+      exercises: current.exercises.map((exercise) => exercise.id === set.session_exercise_id
+        ? { ...exercise, sets: [...exercise.sets, set] }
+        : exercise),
+    }))
+  }
+
+  function updateLoggedSegment(loggedSetId: string, segmentId: string, patch: { weight: number; reps: number; rir: number | null }) {
+    setFull((current) => current && ({
+      ...current,
+      exercises: current.exercises.map((exercise) => ({
+        ...exercise,
+        sets: exercise.sets.map((set) => set.id === loggedSetId
+          ? { ...set, segments: set.segments.map((segment) => segment.id === segmentId ? { ...segment, ...patch } : segment) }
+          : set),
+      })),
+    }))
+  }
+
+  function removeLoggedSet(loggedSetId: string) {
+    setFull((current) => current && ({
+      ...current,
+      exercises: current.exercises.map((exercise) => ({ ...exercise, sets: exercise.sets.filter((set) => set.id !== loggedSetId) })),
+    }))
+  }
+
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
 
   if (loading) return <div className="min-h-screen bg-white p-6 dark:bg-[#0f1115] dark:text-white">{t('common.loading')}</div>
@@ -219,7 +249,9 @@ export function ActiveWorkoutPage() {
                   sessionExercise={se}
                   exercise={ex}
                   target={target}
-                  onChanged={() => loadSession(full.session.id)}
+                  onSetAdded={addLoggedSet}
+                  onSegmentUpdated={updateLoggedSegment}
+                  onSetDeleted={removeLoggedSet}
                 />
               )}
             </div>

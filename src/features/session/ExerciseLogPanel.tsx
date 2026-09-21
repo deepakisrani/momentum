@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useT } from '../../i18n/I18nProvider'
-import { addSet, updateSegment, deleteSet, getLastPerformance, type SessionExerciseFull } from '../../data/sessionRepo'
+import { addSet, updateSegment, deleteSet, getLastPerformance, type LoggedSetFull, type SessionExerciseFull } from '../../data/sessionRepo'
 import type { ExerciseRow } from '../../data/rows'
 import type { Goal, SetResult } from '../../domain/types'
 import { suggestNextSetOne } from '../../domain/suggestion'
@@ -12,7 +12,7 @@ import { NoteEditorSheet } from '../notes/NoteEditorSheet'
 type Target = { targetSets: number; repMin: number; repMax: number }
 
 export function ExerciseLogPanel({
-  userId, sessionId, isDeload, goal, sessionExercise, exercise, target, onChanged,
+  userId, sessionId, isDeload, goal, sessionExercise, exercise, target, onSetAdded, onSegmentUpdated, onSetDeleted,
 }: {
   userId: string
   sessionId: string
@@ -21,7 +21,9 @@ export function ExerciseLogPanel({
   sessionExercise: SessionExerciseFull
   exercise: ExerciseRow | undefined
   target: Target
-  onChanged: () => Promise<void> | void
+  onSetAdded: (set: LoggedSetFull) => void
+  onSegmentUpdated: (loggedSetId: string, segmentId: string, patch: { weight: number; reps: number; rir: number | null }) => void
+  onSetDeleted: (loggedSetId: string) => void
 }) {
   const t = useT()
   const u = useUnits()
@@ -41,8 +43,8 @@ export function ExerciseLogPanel({
     setSaveState((m) => ({ ...m, [setId]: 'saving' }))
     try {
       await updateSegment(seg.id, next)
+      onSegmentUpdated(setId, seg.id, next)
       setSaveState((m) => ({ ...m, [setId]: 'saved' }))
-      await onChanged()
       window.setTimeout(() => setSaveState((m) => {
         if (m[setId] !== 'saved') return m
         const { [setId]: _, ...rest } = m
@@ -81,9 +83,9 @@ export function ExerciseLogPanel({
     if (weight === '' || reps === '') return
     setBusy(true)
     try {
-      await addSet(sessionExercise.id, completed.length, { weight: u.fromWeight(Number(weight)), reps: Number(reps), rir: rir === '' ? null : Number(rir) })
+      const set = await addSet(sessionExercise.id, completed.length, { weight: u.fromWeight(Number(weight)), reps: Number(reps), rir: rir === '' ? null : Number(rir) })
+      onSetAdded(set)
       setRir('')
-      await onChanged()
     } finally { setBusy(false) }
   }
 
@@ -113,7 +115,15 @@ export function ExerciseLogPanel({
                 <input className={numField} defaultValue={seg ? u.toWeight(seg.weight) : ''} onBlur={(e: React.FocusEvent<HTMLInputElement>) => seg && saveSegment(s.id, seg, { weight: u.fromWeight(Number(e.target.value)) })} />
                 <input className={numField} defaultValue={seg?.reps} onBlur={(e: React.FocusEvent<HTMLInputElement>) => seg && saveSegment(s.id, seg, { reps: Number(e.target.value) })} />
                 <input className={numField} defaultValue={seg?.rir ?? ''} placeholder={t('workout.rir')} onBlur={(e: React.FocusEvent<HTMLInputElement>) => seg && saveSegment(s.id, seg, { rir: e.target.value === '' ? null : Number(e.target.value) })} />
-                <button onClick={() => deleteSet(s.id).then(onChanged)} aria-label={t('workout.deleteSet')} className="text-slate-400">✕</button>
+                <button
+                  onClick={() => {
+                    void deleteSet(s.id).then(() => onSetDeleted(s.id)).catch((err) => {
+                      if (import.meta.env.DEV) console.error('[Workout] deleteSet failed:', err)
+                    })
+                  }}
+                  aria-label={t('workout.deleteSet')}
+                  className="text-slate-400"
+                >✕</button>
               </div>
               {st && (
                 <div className={`pl-[32px] pt-0.5 text-xs ${st === 'saved' ? 'text-brand-green' : st === 'error' ? 'text-red-500' : 'text-slate-400'}`}>

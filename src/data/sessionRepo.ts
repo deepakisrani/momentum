@@ -1,11 +1,13 @@
 import { supabase } from '../lib/supabase'
+import { readLocalCache, writeLocalCache } from '../lib/localCache'
 import type { WorkoutSessionRow, SessionExerciseRow, LoggedSetRow, SetSegmentRow } from './rows'
 import type { SetResult } from '../domain/types'
 import { sessionsSinceLastDeload } from '../domain/scheduling'
 
 export interface SessionExerciseFull extends SessionExerciseRow {
-  sets: (LoggedSetRow & { segments: SetSegmentRow[] })[]
+  sets: LoggedSetFull[]
 }
+export interface LoggedSetFull extends LoggedSetRow { segments: SetSegmentRow[] }
 export interface SessionFull {
   session: WorkoutSessionRow
   exercises: SessionExerciseFull[]
@@ -45,42 +47,54 @@ export async function startSession(
 }
 
 export async function getSessionFull(sessionId: string): Promise<SessionFull> {
-  const { data: session, error: e1 } = await supabase.from('workout_session').select('*').eq('id', sessionId).single()
-  if (e1) throw e1
-  const { data: ses, error: e2 } = await supabase
-    .from('session_exercise').select('*').eq('session_id', sessionId).order('order_index', { ascending: true })
-  if (e2) throw e2
-  const seIds = (ses ?? []).map((s) => s.id)
-  let sets: LoggedSetRow[] = []
-  let segments: SetSegmentRow[] = []
-  if (seIds.length) {
-    const { data: ls, error: e3 } = await supabase.from('logged_set').select('*').in('session_exercise_id', seIds).order('set_index', { ascending: true })
-    if (e3) throw e3
-    sets = (ls ?? []) as LoggedSetRow[]
-    const lsIds = sets.map((s) => s.id)
-    if (lsIds.length) {
-      const { data: segs, error: e4 } = await supabase.from('set_segment').select('*').in('logged_set_id', lsIds).order('segment_index', { ascending: true })
-      if (e4) throw e4
-      segments = (segs ?? []) as SetSegmentRow[]
-    }
-  }
+  // One nested read replaces the former four serial requests (session → exercises → sets →
+  // segments). PostgREST/RLS still applies to each relation, but the browser pays one network
+  // round trip and the workout screen can paint as soon as that response arrives.
+  const { data, error } = await supabase
+    .from('workout_session')
+    .select('*, session_exercise(*, logged_set(*, set_segment(*)))')
+    .eq('id', sessionId)
+    .single()
+  if (error) throw error
+  type RawSet = LoggedSetRow & { set_segment: SetSegmentRow[] | null }
+  type RawExercise = SessionExerciseRow & { logged_set: RawSet[] | null }
+  type RawSession = WorkoutSessionRow & { session_exercise: RawExercise[] | null }
+  const session = data as unknown as RawSession
   return {
-    session: session as WorkoutSessionRow,
-    exercises: ((ses ?? []) as SessionExerciseRow[]).map((se) => ({
+    session,
+    exercises: [...(session.session_exercise ?? [])].sort((a, b) => a.order_index - b.order_index).map((se) => ({
       ...se,
-      sets: sets.filter((s) => s.session_exercise_id === se.id).map((s) => ({ ...s, segments: segments.filter((g) => g.logged_set_id === s.id) })),
+      sets: [...(se.logged_set ?? [])].sort((a, b) => a.set_index - b.set_index).map((set) => ({
+        ...set,
+        segments: [...(set.set_segment ?? [])].sort((a, b) => a.segment_index - b.segment_index),
+      })),
     })),
   }
 }
 
+function completedSessionCacheKey(userId: string, sessionId: string): string {
+  return `session-detail:v1:${userId}:${sessionId}`
+}
+
+/** Only completed sessions are cached: an in-progress workout must always come from Supabase. */
+export async function getCachedCompletedSession(userId: string, sessionId: string): Promise<SessionFull | null> {
+  return readLocalCache<SessionFull>(completedSessionCacheKey(userId, sessionId))
+}
+
+export function cacheCompletedSession(userId: string, full: SessionFull): void {
+  if (full.session.status === 'completed') void writeLocalCache(completedSessionCacheKey(userId, full.session.id), full)
+}
+
 /** Adds a single-segment set (v1 has no drop-sets). */
-export async function addSet(sessionExerciseId: string, setIndex: number, seg: { weight: number; reps: number; rir: number | null }): Promise<void> {
+export async function addSet(sessionExerciseId: string, setIndex: number, seg: { weight: number; reps: number; rir: number | null }): Promise<LoggedSetFull> {
   const { data, error } = await supabase
-    .from('logged_set').insert({ session_exercise_id: sessionExerciseId, set_index: setIndex, is_drop_set: false }).select('id').single()
+    .from('logged_set').insert({ session_exercise_id: sessionExerciseId, set_index: setIndex, is_drop_set: false }).select('*').single()
   if (error) throw error
-  const { error: se } = await supabase
+  const { data: segment, error: se } = await supabase
     .from('set_segment').insert({ logged_set_id: data.id, segment_index: 0, weight: seg.weight, reps: seg.reps, rir: seg.rir })
+    .select('*').single()
   if (se) throw se
+  return { ...(data as LoggedSetRow), segments: [segment as SetSegmentRow] }
 }
 
 export async function updateSegment(segmentId: string, seg: { weight: number; reps: number; rir: number | null }): Promise<void> {
@@ -113,6 +127,8 @@ export async function endSession(sessionId: string): Promise<void> {
   const { error } = await supabase
     .from('workout_session').update({ status: 'completed', ended_at: new Date().toISOString() }).eq('id', sessionId)
   if (error) throw error
+  // Suggestions in the next workout must consider the session that just completed.
+  lastPerformanceRequests.clear()
 }
 
 
@@ -151,11 +167,29 @@ export async function getMesoDayStats(userId: string, mesoId: string, since?: st
   return out
 }
 
-/** Most recent prior COMPLETED, NON-deload session's sets for an exercise (first segment of each set), for "last time" + suggestions. Deloads are excluded so suggestions build off real working weights. */
-export async function getLastPerformance(userId: string, exerciseId: string, excludeSessionId: string): Promise<SetResult[] | null> {
+const lastPerformanceRequests = new Map<string, Promise<SetResult[] | null>>()
+
+/** Most recent prior COMPLETED, NON-deload session's sets for an exercise (first segment of each set), for "last time" + suggestions. Deloads are excluded so suggestions build off real working weights.
+ *
+ * The same exercise panel can mount more than once in development and is commonly collapsed/
+ * reopened during a live session. The result cannot change until `excludeSessionId` completes,
+ * so de-duplicate those identical requests for the lifetime of that active session. */
+export function getLastPerformance(userId: string, exerciseId: string, excludeSessionId: string): Promise<SetResult[] | null> {
+  const key = `${userId}:${exerciseId}:${excludeSessionId}`
+  const cached = lastPerformanceRequests.get(key)
+  if (cached) return cached
+  const request = fetchLastPerformance(userId, exerciseId, excludeSessionId)
+  lastPerformanceRequests.set(key, request)
+  void request.catch(() => {
+    if (lastPerformanceRequests.get(key) === request) lastPerformanceRequests.delete(key)
+  })
+  return request
+}
+
+async function fetchLastPerformance(userId: string, exerciseId: string, excludeSessionId: string): Promise<SetResult[] | null> {
   const { data: ws, error } = await supabase
     .from('workout_session')
-    .select('id, session_exercise!inner(id, exercise_id)')
+    .select('session_exercise!inner(exercise_id, logged_set(set_index, set_segment(segment_index, weight, reps, rir)))')
     .eq('user_id', userId)
     .eq('status', 'completed')
     .eq('is_deload', false)
@@ -165,19 +199,15 @@ export async function getLastPerformance(userId: string, exerciseId: string, exc
     .limit(1)
     .maybeSingle()
   if (error) throw error
-  const se = (ws?.session_exercise as { id: string; exercise_id: string }[] | undefined)?.[0]
+  type RawSet = { set_index: number; set_segment: { segment_index: number; weight: number; reps: number; rir: number | null }[] | null }
+  type RawExercise = { exercise_id: string; logged_set: RawSet[] | null }
+  const se = (ws?.session_exercise as RawExercise[] | undefined)?.[0]
   if (!se) return null
-  const { data: ls, error: e2 } = await supabase
-    .from('logged_set').select('id').eq('session_exercise_id', se.id).order('set_index', { ascending: true })
-  if (e2) throw e2
-  const lsIds = (ls ?? []).map((r) => r.id)
-  if (!lsIds.length) return null
-  const { data: segs, error: e3 } = await supabase
-    .from('set_segment').select('*').in('logged_set_id', lsIds).eq('segment_index', 0)
-  if (e3) throw e3
-  const bySet: Record<string, SetSegmentRow> = {}
-  for (const s of (segs ?? []) as SetSegmentRow[]) bySet[s.logged_set_id] = s
-  return lsIds.map((id) => bySet[id]).filter(Boolean).map((s) => ({ weight: s.weight, reps: s.reps, rir: s.rir }))
+  return [...(se.logged_set ?? [])]
+    .sort((a, b) => a.set_index - b.set_index)
+    .map((set) => (set.set_segment ?? []).find((segment) => segment.segment_index === 0))
+    .filter((segment): segment is { segment_index: number; weight: number; reps: number; rir: number | null } => Boolean(segment))
+    .map((segment) => ({ weight: segment.weight, reps: segment.reps, rir: segment.rir }))
 }
 
 export interface SessionSummary {
