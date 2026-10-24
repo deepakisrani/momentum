@@ -47,7 +47,8 @@ export function ExerciseLogPanel({
       setSaveState((m) => ({ ...m, [setId]: 'saved' }))
       window.setTimeout(() => setSaveState((m) => {
         if (m[setId] !== 'saved') return m
-        const { [setId]: _, ...rest } = m
+        const rest = { ...m }
+        delete rest[setId]
         return rest
       }), 1500)
     } catch (err) {
