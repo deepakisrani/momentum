@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useT } from '../../i18n/I18nProvider'
 import { addSet, updateSegment, deleteSet, getLastPerformance, type LoggedSetFull, type SessionExerciseFull } from '../../data/sessionRepo'
 import type { ExerciseRow } from '../../data/rows'
@@ -8,6 +8,7 @@ import { formatLastTime, buildSuggestionInput } from './sessionFormat'
 import { useUnits } from '../profile/useUnits'
 import { useDeloadPct } from '../../prefs/deloadPref'
 import { NoteEditorSheet } from '../notes/NoteEditorSheet'
+import { listNotes, type NoteWithTags } from '../../data/noteRepo'
 
 type Target = { targetSets: number; repMin: number; repMax: number }
 
@@ -35,6 +36,21 @@ export function ExerciseLogPanel({
   const [busy, setBusy] = useState(false)
   const [saveState, setSaveState] = useState<Record<string, 'saving' | 'saved' | 'error'>>({})
   const [noteOpen, setNoteOpen] = useState(false)
+  const [notes, setNotes] = useState<NoteWithTags[] | null>(null)
+  const [notesError, setNotesError] = useState(false)
+
+  // This panel is only mounted for an expanded exercise, so the exercise-note read is lazy:
+  // an active workout still has no note query until the person actually opens an exercise.
+  const loadNotes = useCallback(async () => {
+    setNotesError(false)
+    try {
+      setNotes(await listNotes(userId, { exerciseId: sessionExercise.exercise_id }))
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[Workout] notes load failed:', err)
+      setNotesError(true)
+      setNotes((current) => current ?? [])
+    }
+  }, [userId, sessionExercise.exercise_id])
 
   // Auto-save an edited set (on blur), surfacing saving/saved/error so the write is visible.
   async function saveSegment(setId: string, seg: { id: string; weight: number; reps: number; rir: number | null }, patch: Partial<{ weight: number; reps: number; rir: number | null }>) {
@@ -60,6 +76,8 @@ export function ExerciseLogPanel({
   useEffect(() => {
     getLastPerformance(userId, sessionExercise.exercise_id, sessionId).then(setLast).catch(() => setLast(null))
   }, [userId, sessionExercise.exercise_id, sessionId])
+
+  useEffect(() => { void loadNotes() }, [loadNotes])
 
   const suggestion = useMemo(() => {
     const input = buildSuggestionInput({ last, target: { repMin: target.repMin, repMax: target.repMax }, goal, mechanic: exercise?.mechanic ?? null, isDeload, deloadFactor: deloadPct / 100 })
@@ -103,6 +121,36 @@ export function ExerciseLogPanel({
           <div className="font-medium">{lastLine}</div>
         </div>
       )}
+
+      <section aria-label={t('notes.title')} className="rounded-lg border-l-2 border-brand-600 bg-white px-3 py-2 dark:bg-[#0f1115]">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <span className="text-xs font-semibold uppercase text-slate-400">{t('notes.title')}</span>
+          <button
+            type="button"
+            onClick={() => setNoteOpen(true)}
+            className="text-xs font-semibold text-brand-700 dark:text-brand-400"
+          >
+            {t('notes.addFromWorkout')}
+          </button>
+        </div>
+        {notes === null ? (
+          <p className="text-xs text-slate-500 dark:text-slate-400">{t('common.loading')}</p>
+        ) : notes.length === 0 ? (
+          <p className="text-xs text-slate-500 dark:text-slate-400">{t('notes.emptyFiltered')}</p>
+        ) : (
+          <ul className="space-y-2">
+            {notes.map((note) => (
+              <li key={note.id} className="border-t border-slate-100 pt-2 first:border-t-0 first:pt-0 dark:border-slate-800">
+                <p className="whitespace-pre-wrap break-words text-sm">{note.body}</p>
+                <time dateTime={note.created_at} className="mt-0.5 block text-[10px] text-slate-400">
+                  {new Date(note.created_at).toLocaleDateString()}
+                </time>
+              </li>
+            ))}
+          </ul>
+        )}
+        {notesError && <p className="mt-2 text-xs text-red-500">{t('common.error')}</p>}
+      </section>
 
       {/* logged sets */}
       <ul className="space-y-1">
@@ -153,15 +201,6 @@ export function ExerciseLogPanel({
         {t('workout.addSet')}
       </button>
 
-      {/* Write-only: the panel never reads notes back, so its load path is untouched and a
-          note costs this screen nothing until the user asks for one. */}
-      <button
-        type="button"
-        onClick={() => setNoteOpen(true)}
-        className="w-full rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-brand-700 dark:bg-[#1b2030] dark:text-brand-400"
-      >
-        {t('notes.addFromWorkout')}
-      </button>
     </div>
 
     {/* Outside the space-y root, like every other overlay in this feature: `space-y-3` sets
@@ -172,7 +211,7 @@ export function ExerciseLogPanel({
         userId={userId}
         sessionId={sessionId}
         initialExerciseIds={[sessionExercise.exercise_id]}
-        onSaved={() => setNoteOpen(false)}
+        onSaved={async () => { await loadNotes(); setNoteOpen(false) }}
         onClose={() => setNoteOpen(false)}
       />
     )}
