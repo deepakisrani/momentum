@@ -51,6 +51,23 @@ function topSet(sets: SetResult[]): SetResult {
   )
 }
 
+/** The usual working weight from the previous session, then its best-rep set.
+ *
+ * A heavier one-off set (a test, accidental plate change, or informal top set) should not
+ * silently replace two or three normal working sets as the next session's default. When every
+ * weight appears equally often there is no evidence of a working weight, so favour the heavier
+ * one and retain the old top-set behaviour for that ambiguous case. */
+function workingSet(sets: SetResult[]): SetResult {
+  const counts = new Map<number, number>()
+  for (const set of sets) counts.set(set.weight, (counts.get(set.weight) ?? 0) + 1)
+  let workingWeight = sets[0].weight
+  for (const [weight, count] of counts) {
+    const currentCount = counts.get(workingWeight) ?? 0
+    if (count > currentCount || (count === currentCount && weight > workingWeight)) workingWeight = weight
+  }
+  return topSet(sets.filter((set) => set.weight === workingWeight))
+}
+
 export function suggestNextSetOne(input: SuggestionInput): Suggestion | null {
   const { lastSession, repRange, goal, mechanic, isDeload } = input
   if (!lastSession || lastSession.length === 0) return null
@@ -63,22 +80,25 @@ export function suggestNextSetOne(input: SuggestionInput): Suggestion | null {
     return { weight: roundTo(top.weight * factor, WEIGHT_ROUNDING_STEP_KG), repTarget: repRange.min, reason: 'deload' }
   }
 
-  const hitTop = top.reps >= repRange.max
+  // Progress normal training from the repeated working weight, not an isolated heavier set.
+  const working = workingSet(lastSession)
+
+  const hitTop = working.reps >= repRange.max
 
   if (hitTop) {
-    if (top.rir == null) {
-      return { weight: top.weight, repTarget: repRange.max, reason: 'hold_missing_rir' }
+    if (working.rir == null) {
+      return { weight: working.weight, repTarget: repRange.max, reason: 'hold_missing_rir' }
     }
-    if (top.rir >= RIR_GATE[goal]) {
-      const next = increment > 0 ? roundTo(top.weight + increment, increment) : top.weight + increment
+    if (working.rir >= RIR_GATE[goal]) {
+      const next = increment > 0 ? roundTo(working.weight + increment, increment) : working.weight + increment
       return { weight: next, repTarget: repRange.min, reason: 'add_weight' }
     }
-    return { weight: top.weight, repTarget: repRange.max, reason: 'hold_no_reserve' }
+    return { weight: working.weight, repTarget: repRange.max, reason: 'hold_no_reserve' }
   }
 
-  if (top.reps < repRange.min) {
-    return { weight: top.weight, repTarget: repRange.min, reason: 'rebuild' }
+  if (working.reps < repRange.min) {
+    return { weight: working.weight, repTarget: repRange.min, reason: 'rebuild' }
   }
 
-  return { weight: top.weight, repTarget: Math.min(top.reps + 1, repRange.max), reason: 'add_rep' }
+  return { weight: working.weight, repTarget: Math.min(working.reps + 1, repRange.max), reason: 'add_rep' }
 }

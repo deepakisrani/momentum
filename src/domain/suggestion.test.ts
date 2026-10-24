@@ -56,12 +56,29 @@ describe('suggestNextSetOne', () => {
     expect(r).toEqual({ weight: 60, repTarget: 8, reason: 'deload' })
   })
 
-  it('uses the heaviest set as the top set', () => {
+  it('breaks an equal-frequency weight tie in favour of the heavier set', () => {
     const r = suggestNextSetOne({ ...base, goal: 'bulk', lastSession: sets(
       { weight: 50, reps: 12, rir: 3 },
       { weight: 60, reps: 12, rir: 1 },
     ) })
     expect(r).toEqual({ weight: 62.5, repTarget: 8, reason: 'add_weight' })
+  })
+
+  it('uses the repeated working weight rather than a one-off heavier set', () => {
+    const r = suggestNextSetOne({ ...base, lastSession: sets(
+      { weight: 80, reps: 8, rir: 1 },
+      { weight: 70, reps: 10, rir: 2 },
+      { weight: 70, reps: 10, rir: 2 },
+    ) })
+    expect(r).toEqual({ weight: 70, repTarget: 11, reason: 'add_rep' })
+  })
+
+  it('uses the heaviest weight when every weight appears equally often', () => {
+    const r = suggestNextSetOne({ ...base, lastSession: sets(
+      { weight: 70, reps: 10, rir: 2 },
+      { weight: 80, reps: 8, rir: 1 },
+    ) })
+    expect(r).toEqual({ weight: 80, repTarget: 9, reason: 'add_rep' })
   })
 
   it('respects an explicit increment override', () => {
