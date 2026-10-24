@@ -6,10 +6,10 @@ export default {
     extend: {
       colors: {
         brand: {
-          50: '#ecfdff', 100: '#d0f7fe', 200: '#a6effd', 300: '#6fe2fb', 400: '#2fcdf3',
-          500: '#09b9ee', 600: '#0c89c4', 700: '#0c6aa6', 800: '#0f5285', 900: '#123f63',
+          50: '#fbffe9', 100: '#efffc1', 200: '#e3ff91', 300: '#d9ff68', 400: '#d4ff4d',
+          500: '#c2ee42', 600: '#a7d336', 700: '#89ad2c', 800: '#668221', 900: '#455b18',
         },
-        'brand-green': '#10c9a8',
+        'brand-green': '#d4ff4d',
       },
       fontFamily: {
         sans: ['"Inter Tight"', 'system-ui', 'sans-serif'],

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 52" role="img" aria-labelledby="title">
+  <title id="title">Momentum</title>
+  <g fill="#455b18" stroke="#455b18">
+    <text x="2" y="40" stroke="none" font-family="Inter Tight, Arial, sans-serif" font-size="44" font-weight="700" letter-spacing="-5">m</text>
+    <circle cx="48" cy="26" r="14" fill="none" stroke-width="7"/>
+    <path d="M41 22l7 9 7-9" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="70" y="39" fill="#10150a" font-family="Inter Tight, Arial, sans-serif" font-size="37" font-weight="600" letter-spacing="-1.4">mentum</text>
+</svg>

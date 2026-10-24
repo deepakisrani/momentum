@@ -223,14 +223,14 @@ export function ActiveWorkoutPage() {
           const status = exerciseStatus(target.targetSets, se.sets.length)
           const open = expanded === se.id
           return (
-            <div key={se.id} className={`relative overflow-hidden rounded-xl bg-slate-100 dark:bg-[#1b2030] ${status === 'done' ? 'ring-1 ring-brand-green/60' : ''}`}>
+            <div key={se.id} className={`relative overflow-hidden rounded-lg border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-[#1b2030] ${status === 'done' ? 'ring-1 ring-brand-green/60' : ''}`}>
               {status === 'done' && (
-                <div className="animate-done-flash pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-brand-green text-sm font-bold uppercase tracking-wide text-white">
+                <div className="animate-done-flash pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-brand-green text-sm font-bold uppercase tracking-wide text-[#10150a]">
                   {t('workout.exerciseDone')}
                 </div>
               )}
               <div className="flex items-center">
-                <button onClick={() => setExpanded(open ? null : se.id)} className="flex flex-1 items-center justify-between p-4 text-left">
+                <button onClick={() => setExpanded(open ? null : se.id)} className="flex flex-1 items-center justify-between px-4 py-3 text-left">
                   <span className="font-semibold">{ex?.name ?? '…'}</span>
                   <span className={`text-xs ${status === 'done' ? 'text-brand-green' : status === 'in_progress' ? 'text-brand-500' : 'text-slate-400'}`}>
                     {se.sets.length}/{target.targetSets} · {t(`workout.status.${status}`)}
@@ -306,7 +306,7 @@ function Header({ startIso, isDeload, onEnd, onToggleDeload, busy }: { startIso:
   const t = useT()
   const elapsed = useElapsed(startIso)
   return (
-    <div className="bg-gradient-to-r from-brand-700 to-brand-600 p-4 text-white">
+    <div className="border-b border-brand-900 bg-[#10150a] p-4 text-white">
       <div className="mx-auto flex max-w-lg items-center justify-between">
         <div>
           <div className="text-xs opacity-90">{t('workout.inProgress')}</div>
@@ -319,7 +319,7 @@ function Header({ startIso, isDeload, onEnd, onToggleDeload, busy }: { startIso:
               <span className={`absolute top-0.5 h-5 w-5 rounded-full transition-all ${isDeload ? 'left-[22px] bg-brand-700' : 'left-0.5 bg-white'}`} />
             </span>
           </button>
-          <button disabled={busy} onClick={onEnd} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold uppercase tracking-wide text-white hover:bg-red-700 disabled:opacity-60">
+          <button disabled={busy} onClick={onEnd} className="rounded-lg border border-red-400/50 bg-transparent px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-red-200 hover:bg-red-950 disabled:opacity-60">
             {t('workout.end')}
           </button>
         </div>

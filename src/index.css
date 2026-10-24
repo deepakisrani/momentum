@@ -6,6 +6,54 @@ body {
   font-family: 'Inter Tight', system-ui, sans-serif;
 }
 
+/* Midnight Grid: dark mode is deliberately black-led rather than slate-led. The app uses
+   utility classes for its components, so these shared dark tokens keep every existing screen
+   in one visual system without changing its information architecture. */
+html.dark,
+html.dark body {
+  background: #090b0d;
+  color-scheme: dark;
+}
+html.dark .dark\:bg-\[\#0f1115\] { background-color: #090b0d; }
+html.dark .dark\:bg-\[\#1b2030\] { background-color: #12171a; }
+html.dark .dark\:bg-\[\#0f1115\]\/90 { background-color: rgb(9 11 13 / 0.9); }
+html.dark .dark\:border-slate-700,
+html.dark .dark\:border-slate-800 { border-color: #293136; }
+html.dark .dark\:text-slate-400 { color: #9ba5a8; }
+html.dark .rounded-2xl { border-radius: 0.9rem; }
+html.dark .rounded-xl { border-radius: 0.72rem; }
+html.dark .rounded-lg { border-radius: 0.5rem; }
+html.dark ::selection { background: #789f24; color: #090b0d; }
+
+/* The accent is intentionally neon in dark mode. `bg-brand-*` is used for buttons across
+   the app, so setting the ink foreground here makes that system-wide change accessible
+   without rewriting every action component. */
+html.dark .bg-brand-700,
+html.dark .bg-brand-600,
+html.dark .bg-brand-500,
+html.dark .bg-brand-400,
+html.dark .bg-brand-green { background-color: #d4ff4d; color: #10150a; }
+html.dark .hover\:bg-brand-800:hover { background-color: #e3ff91; }
+html.dark .text-brand-700,
+html.dark .text-brand-500,
+html.dark .dark\:text-brand-400,
+html.dark .text-brand-green { color: #d4ff4d; }
+html.dark .border-brand-900 { border-color: #526d18; }
+html.dark .border-brand-600 { border-color: #d4ff4d; }
+html.dark .border-brand-700 { border-color: #d4ff4d; }
+html.dark .border-brand-600\/40 { border-color: rgb(212 255 77 / 0.4); }
+html.dark .ring-brand-green\/60 { --tw-ring-color: rgb(212 255 77 / 0.6); }
+html.dark .ring-brand-500 { --tw-ring-color: #d4ff4d; }
+html.dark .focus-within\:ring-brand-500:focus-within { --tw-ring-color: #d4ff4d; }
+html.dark .fill-brand-600 { fill: #d4ff4d; }
+html.dark .stroke-brand-600 { stroke: #d4ff4d; }
+
+/* Light mode keeps the same green family, but uses its ink tone for readable text. */
+html:not(.dark) .bg-brand-700,
+html:not(.dark) .bg-brand-600 { color: #10150a; }
+html:not(.dark) .text-brand-700,
+html:not(.dark) .text-brand-500 { color: #455b18; }
+
 /* One-time "exercise done" flourish: fades in over the card, then out. */
 @keyframes done-flash {
   0% { opacity: 0; transform: scale(0.96); }

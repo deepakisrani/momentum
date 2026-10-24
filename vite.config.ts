@@ -16,20 +16,13 @@ export default defineConfig(({ command }) => ({
       manifest: {
         name: 'Momentum',
         short_name: 'Momentum',
-        theme_color: '#0c6aa6',
-        // Splash background — must match the icon's white tile, otherwise the
-        // icon's white square shows as a box on the splash screen.
-        background_color: '#ffffff',
+        theme_color: '#d4ff4d',
+        background_color: '#090b0d',
         display: 'standalone',
         // Relative (no leading slash) so they resolve against the manifest's
         // own URL — correct under both the / dev base and the /momentum/ prod base.
-        // Separate `any` (tight) and `maskable` (padded safe-zone) icons — one
-        // image for both purposes renders incorrectly on some platforms.
         icons: [
-          { src: 'icon-any-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: 'icon-any-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
         ],
         // Unlocks the richer install dialog. `wide` = desktop, the other = mobile.
         screenshots: [

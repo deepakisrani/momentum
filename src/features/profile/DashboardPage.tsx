@@ -42,27 +42,29 @@ export function DashboardPage() {
     today: new Date(),
   })
   const firstName = (profile.display_name ?? '').split(' ')[0]
-  const card = 'block w-full rounded-2xl px-5 py-6 text-lg font-bold'
+  const card = 'block w-full rounded-lg border border-slate-200 px-4 py-4 text-base font-semibold transition-colors dark:border-slate-800'
 
   return (
     <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="mx-auto max-w-4xl space-y-5">
         <InstallBanner />
         <div>
           <h1 className="text-2xl font-bold">{t('home.welcome')}{firstName ? `, ${firstName}` : ''}</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">{t('home.targetCalories')}: {summary.target} {t('dashboard.kcal')}</p>
         </div>
-        <div className="space-y-3">
-          <Link to="/workout" className={`${card} bg-brand-700 text-center text-white hover:bg-brand-800`}>
-            {hasActiveSession ? t('workout.resume') : t('workout.start')}
+        <div className="space-y-2">
+          <Link to="/workout" className={`${card} flex items-center justify-between bg-brand-700 text-white hover:bg-brand-800`}>
+            <span>{hasActiveSession ? t('workout.resume') : t('workout.start')}</span>
+            <span aria-hidden="true">→</span>
           </Link>
           {/* Above the grid, not in it: the grid is section navigation, and this opens a modal
               in place. Full width beside the workout CTA is also what makes it one tap from
               launch, which is the whole point of putting it here rather than only on Goals. */}
-          <button type="button" onClick={() => setLogOpen(true)} className={`${card} bg-slate-100 text-center dark:bg-[#1b2030]`}>
-            {t('metrics.logWeight')}
+          <button type="button" onClick={() => setLogOpen(true)} className={`${card} flex items-center justify-between bg-slate-100 text-left dark:bg-[#1b2030]`}>
+            <span>{t('metrics.logWeight')}</span>
+            <span aria-hidden="true" className="text-slate-400">+</span>
           </button>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             <Link to="/mesos" className={`${card} bg-slate-100 dark:bg-[#1b2030]`}>{t('mesos.title')}</Link>
             <Link to="/exercises" className={`${card} bg-slate-100 dark:bg-[#1b2030]`}>{t('exercises.title')}</Link>
             <Link to="/history" className={`${card} bg-slate-100 dark:bg-[#1b2030]`}>{t('history.title')}</Link>
