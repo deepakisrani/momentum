@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
   <title id="title">Momentum</title>
   <rect width="512" height="512" rx="112" fill="#d4ff4d"/>
-  <g fill="#10150a" stroke="#10150a">
-    <text x="91" y="337" stroke="none" font-family="Inter Tight, Arial, sans-serif" font-size="294" font-weight="700" letter-spacing="-35">m</text>
-    <circle cx="337" cy="261" r="82" fill="none" stroke-width="42"/>
-    <path d="M295 238l42 53 42-53" fill="none" stroke-width="29" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="none" stroke="#10150a" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M110 332V211c0-35 56-35 56 3v118m0-118c0-38 59-38 59 0v118" stroke-width="42"/>
+    <circle cx="361" cy="258" r="73" stroke-width="40"/>
+    <path d="M323 238l38 48 38-48" stroke-width="25"/>
   </g>
 </svg>
