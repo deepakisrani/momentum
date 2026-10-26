@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 304 52" role="img" aria-labelledby="title">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 52" role="img" aria-labelledby="title">
   <title id="title">Momentum</title>
-  <g fill="none" stroke="#455b18" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M8 39V18c0-12 18-12 18 1v20m0-20c0-13 19-13 19 0v20" stroke-width="7"/>
-    <path d="M47 19c4 0 6 2 8 5" stroke-width="4.5"/>
-    <circle cx="71" cy="26" r="14" stroke-width="7"/>
-    <path d="M64 22l7 9 7-9" stroke-width="5"/>
+  <g fill="#455b18">
+    <rect x="3" y="12" width="12" height="5" rx="2.5"/>
+    <rect x="0" y="22" width="19" height="5" rx="2.5"/>
+    <rect x="4" y="32" width="12" height="5" rx="2.5"/>
+    <text x="20" y="40" font-family="Arial, sans-serif" font-size="44" font-weight="900" letter-spacing="-6">m</text>
   </g>
-  <text x="95" y="39" fill="#10150a" font-family="Inter Tight, Arial, sans-serif" font-size="37" font-weight="600" letter-spacing="-1.4">mentum</text>
+  <text x="70" y="39" fill="#10150a" font-family="Inter Tight, Arial, sans-serif" font-size="37" font-weight="600" letter-spacing="-1.4">Momentum</text>
 </svg>
