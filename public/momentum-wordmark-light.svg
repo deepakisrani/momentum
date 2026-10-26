@@ -2,6 +2,7 @@
   <title id="title">Momentum</title>
   <g fill="none" stroke="#455b18" stroke-linecap="round" stroke-linejoin="round">
     <path d="M8 39V18c0-12 18-12 18 1v20m0-20c0-13 19-13 19 0v20" stroke-width="7"/>
+    <path d="M47 19c4 0 6 2 8 5" stroke-width="4.5"/>
     <circle cx="71" cy="26" r="14" stroke-width="7"/>
     <path d="M64 22l7 9 7-9" stroke-width="5"/>
   </g>
