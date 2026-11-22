@@ -65,7 +65,7 @@ export function flattenMesoQuery(sessions: QSession[]): MesoSetRow[] {
  * under PostgREST's 1000-row cap; nested sets are JSON and don't count. The unassigned
  * bucket aggregates every orphan across all time, so it is the largest plausible bucket --
  * still ~5 years of 4x/week training away from the cap. */
-export async function getMesoSetRows(userId: string, mesoId: string | null): Promise<MesoSetRow[]> {
+export async function getMesoExport(userId: string, mesoId: string | null) {
   let q = supabase
     .from('workout_session')
     .select(
@@ -77,5 +77,6 @@ export async function getMesoSetRows(userId: string, mesoId: string | null): Pro
   q = mesoId === null ? q.is('meso_id', null) : q.eq('meso_id', mesoId)
   const { data, error } = await q
   if (error) throw error
-  return flattenMesoQuery((data ?? []) as unknown as QSession[])
+  const sessions = (data ?? []) as unknown as QSession[]
+  return { rows: flattenMesoQuery(sessions), sessions }
 }

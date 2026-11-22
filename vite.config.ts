@@ -4,8 +4,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // Served from a GitHub Pages project site at /momentum/ in production;
 // stays at root for local dev so `npm run dev` works unchanged.
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/momentum/' : '/',
+export default defineConfig(({ command, mode }) => ({
+  base: command === 'build' && mode !== 'android' ? '/momentum/' : '/',
+  build: { outDir: mode === 'android' ? 'dist-android' : 'dist' },
   plugins: [
     react(),
     VitePWA({

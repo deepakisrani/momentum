@@ -7,6 +7,7 @@
     "dev": "vite",
     "dev:local": "node scripts/local-dev.mjs",
     "build": "tsc -b && node --experimental-global-webcrypto node_modules/vite/bin/vite.js build",
+    "android:sync": "npm run build -- --mode android && cap sync android",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
@@ -17,6 +18,10 @@
     "supabase:reset": "supabase db reset"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/browser": "^8.0.5",
+    "@capacitor/core": "^8.6.2",
     "@fontsource/inter-tight": "^5.2.7",
     "@supabase/supabase-js": "^2.78.0",
     "react": "^18.3.1",
@@ -24,6 +29,7 @@
     "react-router-dom": "^6.30.4"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.2",
     "@eslint/js": "^9.13.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

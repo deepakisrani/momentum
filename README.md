@@ -11,6 +11,8 @@ publishable key.
 For a full local environment—including Postgres, Auth, Row Level Security, and migrations—follow
 [Local development](docs/LOCAL_DEVELOPMENT.md).
 
+For the installed Android app, Health Connect setup, and physical-device checks, see [Android development](docs/ANDROID.md).
+
 ## Checks
 
 - `npm test`

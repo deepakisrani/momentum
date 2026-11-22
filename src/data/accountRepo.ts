@@ -16,6 +16,9 @@ export async function resetAccount(userId: string): Promise<void> {
   await wipe('workout_session', 'user_id') // cascades session_exercise → logged_set → set_segment
   await wipe('meso', 'user_id') // cascades meso_day → meso_day_exercise, + microcycle
   await wipe('weight_log', 'user_id')
+  await wipe('body_measurement', 'user_id')
+  await wipe('sleep_session', 'user_id')
+  await wipe('health_import_state', 'user_id')
   await wipe('goal_log', 'user_id')
   await wipe('exercise', 'owner_user_id') // custom exercises only
 

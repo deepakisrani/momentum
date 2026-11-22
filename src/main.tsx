@@ -7,6 +7,8 @@ import { AuthProvider } from './auth/AuthProvider'
 import App from './App'
 import './pwa/installPrompt'
 import { registerSW } from 'virtual:pwa-register'
+import { Capacitor } from '@capacitor/core'
+import { listenForAndroidAuth } from './auth/androidAuth'
 import '@fontsource/inter-tight/400.css'
 import '@fontsource/inter-tight/500.css'
 import '@fontsource/inter-tight/600.css'
@@ -16,12 +18,13 @@ import './index.css'
 // Register the service worker and check for a new build hourly while the app is
 // open (it also checks on launch). In autoUpdate mode the new SW activates and
 // the page reloads itself to the latest build.
-registerSW({
+if (!Capacitor.isNativePlatform()) registerSW({
   immediate: true,
   onRegisteredSW(_swUrl, registration) {
     if (registration) setInterval(() => { void registration.update() }, 60 * 60 * 1000)
   },
 })
+listenForAndroidAuth()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

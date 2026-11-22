@@ -3,7 +3,7 @@ import type { WeightLogRow } from './rows'
 
 export async function getLatestWeight(userId: string): Promise<WeightLogRow | null> {
   const { data, error } = await supabase
-    .from('weight_log')
+    .from('daily_weight')
     .select('*')
     .eq('user_id', userId)
     .order('logged_on', { ascending: false })
@@ -15,7 +15,7 @@ export async function getLatestWeight(userId: string): Promise<WeightLogRow | nu
 
 export async function listWeights(userId: string): Promise<WeightLogRow[]> {
   const { data, error } = await supabase
-    .from('weight_log')
+    .from('daily_weight')
     .select('*')
     .eq('user_id', userId)
     .order('logged_on', { ascending: true })

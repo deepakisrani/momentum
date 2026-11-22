@@ -1,19 +1,33 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useT } from '../i18n/I18nProvider'
 import { Wordmark } from '../components/Wordmark'
+import { Capacitor } from '@capacitor/core'
+import { signInOnAndroid } from './androidAuth'
 
 export function LoginPage() {
   const t = useT()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [error, setError] = useState<string | null>(null)
+  const callbackError = searchParams.has('auth_error') ? t('common.error') : null
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const isLocalSupabase = import.meta.env.VITE_LOCAL_SUPABASE === 'true'
 
   async function signInWithGoogle() {
+    if (Capacitor.getPlatform() === 'android') {
+      if (callbackError) setSearchParams({}, { replace: true })
+      setError(null)
+      try {
+        await signInOnAndroid()
+      } catch {
+        setError(t('common.error'))
+      }
+      return
+    }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}auth/callback` },
@@ -57,7 +71,11 @@ export function LoginPage() {
           {t('auth.signInWithGoogle')}
         </button>
       )}
-      {error && <p className="text-red-400 text-sm max-w-xs text-center">{isLocalSupabase ? error : t('auth.notInvited')}</p>}
+      {(error || callbackError) && (
+        <p className="text-red-400 text-sm max-w-xs text-center">
+          {callbackError ?? (isLocalSupabase || Capacitor.isNativePlatform() ? error : t('auth.notInvited'))}
+        </p>
+      )}
     </div>
   )
 }
