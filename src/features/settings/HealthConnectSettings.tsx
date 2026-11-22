@@ -5,6 +5,7 @@ import { healthInstallationId, syncHealthConnect } from './syncHealthConnect'
 
 const labels: Record<HealthType, string> = {
   weight_kg: 'Weight', body_fat_pct: 'Body fat', lean_mass_kg: 'Lean body mass', sleep: 'Sleep',
+  steps: 'Steps', resting_heart_rate: 'Resting heart rate',
 }
 
 export function HealthConnectSettings({ userId, onSynced }: { userId: string; onSynced: () => Promise<void> }) {
@@ -56,7 +57,7 @@ export function HealthConnectSettings({ userId, onSynced }: { userId: string; on
   return (
     <section className="space-y-2 rounded-xl bg-slate-100 p-4 dark:bg-[#1b2030]">
       <h2 className="text-sm font-semibold">Health Connect</h2>
-      {isAndroid && <p className="text-sm">Sync now copies the weight, body fat, lean body mass and sleep records you allow to your Momentum account.</p>}
+      {isAndroid && <p className="text-sm">Sync now copies the health data you allow to your Momentum account, including daily steps and resting heart rate when available.</p>}
       {status && !status.available && <p className="text-sm">Health Connect is unavailable. Check for an Android or Health Connect update.</p>}
       {status?.available && (
         <div className="flex flex-wrap gap-2">

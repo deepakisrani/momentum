@@ -18,6 +18,7 @@ export async function resetAccount(userId: string): Promise<void> {
   await wipe('weight_log', 'user_id')
   await wipe('body_measurement', 'user_id')
   await wipe('sleep_session', 'user_id')
+  await wipe('daily_health', 'user_id')
   await wipe('health_import_state', 'user_id')
   await wipe('goal_log', 'user_id')
   await wipe('exercise', 'owner_user_id') // custom exercises only

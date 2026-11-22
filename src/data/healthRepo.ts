@@ -1,7 +1,19 @@
 import { supabase } from '../lib/supabase'
 
 export type BodyMetric = 'weight_kg' | 'body_fat_pct' | 'lean_mass_kg'
-export type HealthType = BodyMetric | 'sleep'
+export type DailyMetric = 'steps' | 'resting_heart_rate'
+export type HealthType = BodyMetric | 'sleep' | DailyMetric
+export type DailyReading = { day: string; value: number }
+
+export async function applyDailyHealth(userId: string, installation: string, type: DailyMetric,
+  result: { firstDay: string; lastDay: string; readings: DailyReading[] },
+) {
+  const { error } = await supabase.rpc('apply_daily_health', {
+    account: userId, installation, kind: type, first_day: result.firstDay,
+    last_day: result.lastDay, readings: result.readings,
+  })
+  if (error) throw error
+}
 
 export interface BodyMeasurement {
   record_id: string
@@ -47,7 +59,7 @@ export async function getHealthSyncState(userId: string, installationId?: string
   return [...latest.values()]
 }
 
-export async function getHealthTrendsData(userId: string, firstDay: string, lastDay: string) {
+export async function getDailyHealthData(userId: string, firstDay: string, lastDay: string) {
   // Source offsets can move a UTC timestamp to either neighboring calendar day.
   const from = new Date(Date.parse(firstDay) - 86_400_000).toISOString()
   const until = new Date(Date.parse(lastDay) + 2 * 86_400_000).toISOString()
@@ -64,7 +76,7 @@ export async function getHealthTrendsData(userId: string, firstDay: string, last
     }
   }
 
-  const [weights, body, sleep] = await Promise.all([
+  const [weights, body, sleep, daily] = await Promise.all([
     readPages<{ logged_on: string; weight_kg: number }>((first, last) =>
       supabase.from('daily_weight').select('logged_on, weight_kg').eq('user_id', userId)
         .gte('logged_on', firstDay).lte('logged_on', lastDay).order('logged_on').range(first, last)),
@@ -76,6 +88,9 @@ export async function getHealthTrendsData(userId: string, firstDay: string, last
       supabase.from('sleep_session').select('record_id, source_package, started_at, ended_at, end_offset_seconds, start_offset_seconds, stages')
         .eq('user_id', userId).gte('ended_at', from).lt('ended_at', until)
         .order('ended_at').order('record_id').range(first, last)),
+    readPages<DailyReading & { metric: DailyMetric }>((first, last) =>
+      supabase.from('daily_health').select('day, metric, value').eq('user_id', userId)
+        .gte('day', firstDay).lte('day', lastDay).order('day').order('metric').range(first, last)),
   ])
-  return { weights, body, sleep }
+  return { weights, body, sleep, daily }
 }

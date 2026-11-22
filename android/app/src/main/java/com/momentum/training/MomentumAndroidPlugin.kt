@@ -9,6 +9,9 @@ import androidx.health.connect.client.records.LeanBodyMassRecord
 import androidx.health.connect.client.records.Record
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.WeightRecord
+import androidx.health.connect.client.records.StepsRecord
+import androidx.health.connect.client.records.RestingHeartRateRecord
+import androidx.health.connect.client.request.AggregateGroupByPeriodRequest
 import androidx.health.connect.client.request.ChangesTokenRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
@@ -23,6 +26,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.time.Instant
+import java.time.LocalDate
+import java.time.Period
 
 @CapacitorPlugin(name = "MomentumAndroid")
 class MomentumAndroidPlugin : Plugin() {
@@ -32,7 +37,14 @@ class MomentumAndroidPlugin : Plugin() {
         "lean_mass_kg" to LeanBodyMassRecord::class,
         "sleep" to SleepSessionRecord::class,
     )
-    private val permissions = recordTypes.mapValues { HealthPermission.getReadPermission(it.value) }
+    private val dailyMetrics = mapOf(
+        "steps" to StepsRecord.COUNT_TOTAL,
+        "resting_heart_rate" to RestingHeartRateRecord.BPM_AVG,
+    )
+    private val permissions = recordTypes.mapValues { HealthPermission.getReadPermission(it.value) } + mapOf(
+        "steps" to HealthPermission.getReadPermission(StepsRecord::class),
+        "resting_heart_rate" to HealthPermission.getReadPermission(RestingHeartRateRecord::class),
+    )
     private val host get() = activity as MainActivity
 
     @PluginMethod
@@ -58,6 +70,27 @@ class MomentumAndroidPlugin : Plugin() {
         val type = requireNotNull(recordTypes[call.getString("type")])
         val token = HealthConnectClient.getOrCreate(context).getChangesToken(ChangesTokenRequest(setOf(type)))
         JSObject().put("token", token)
+    }
+
+    @PluginMethod
+    fun readDailyHealth(call: PluginCall) = runCall(call) {
+        val metric = requireNotNull(dailyMetrics[call.getString("type")])
+        val lastDay = LocalDate.now()
+        val firstDay = lastDay.minusDays(28)
+        val buckets = HealthConnectClient.getOrCreate(context).aggregateGroupByPeriod(
+            AggregateGroupByPeriodRequest(
+                metrics = setOf(metric),
+                timeRangeFilter = TimeRangeFilter.between(firstDay.atStartOfDay(), lastDay.plusDays(1).atStartOfDay()),
+                timeRangeSlicer = Period.ofDays(1),
+            )
+        )
+        val readings = buckets.mapNotNull { bucket ->
+            bucket.result[metric]?.let { value ->
+                JSObject().put("day", bucket.startTime.toLocalDate().toString()).put("value", value)
+            }
+        }
+        JSObject().put("firstDay", firstDay.toString()).put("lastDay", lastDay.toString())
+            .put("readings", JSArray(readings))
     }
 
     @PluginMethod

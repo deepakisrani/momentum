@@ -1,4 +1,4 @@
-import { applyHealthChanges, getHealthSyncState, type HealthType } from '../../data/healthRepo'
+import { applyDailyHealth, applyHealthChanges, getHealthSyncState, type HealthType } from '../../data/healthRepo'
 import { momentumAndroid } from '../../lib/momentumAndroid'
 
 export function healthInstallationId() {
@@ -21,6 +21,10 @@ export async function syncHealthConnect(userId: string, installation: string, ty
     const recovered: HealthType[] = []
     for (const type of types) {
       try {
+        if (type === 'steps' || type === 'resting_heart_rate') {
+          await applyDailyHealth(userId, installation, type, await momentumAndroid.readDailyHealth({ type }))
+          continue
+        }
         if (await syncType(userId, installation, type, state.some((row) => row.record_type === type))) {
           recovered.push(type)
         }

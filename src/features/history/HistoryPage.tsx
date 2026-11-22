@@ -5,9 +5,8 @@ import { useT } from '../../i18n/I18nProvider'
 import { listMesosForHistory, getMesoDayLabels } from '../../data/mesoRepo'
 import { countCompletedSessions, getMesoSessionPage, type SessionCursor, type SessionPage, type SessionSummary } from '../../data/sessionRepo'
 import { getMesoExport } from '../../data/exportRepo'
-import { getHealthTrendsData } from '../../data/healthRepo'
-import { healthTrendsCsv } from './healthTrendsCsv'
-import { mesoRowsToCsv } from './mesoCsv'
+import { getDailyHealthData } from '../../data/healthRepo'
+import { calendarDay, dailyHealthCsv } from './dailyHealthCsv'
 import { downloadTextFile } from '../../lib/download'
 import { useUnits } from '../profile/useUnits'
 import type { MesoRow } from '../../data/rows'
@@ -154,41 +153,35 @@ export function HistoryPage() {
   // is why the split happens here rather than in the database.
   const runs = splitByRun(sessions ?? [], selectedMeso?.activated_at ?? null)
 
-  async function onExport(trends = false) {
-    if (!scope) return
+  async function onExport() {
     setExporting(true)
     setExportError(false)
     try {
-      // The export follows the switcher, not the active meso.
-      const { rows, sessions } = await getMesoExport(userId, scope.kind === 'meso' ? scope.mesoId : null)
-      const base = selectedMeso?.name ?? UNASSIGNED_SLUG
+      const training = scope ? await getMesoExport(userId, scope.kind === 'meso' ? scope.mesoId : null)
+        : { rows: [], sessions: [] }
+      const today = localIsoDate(new Date().toISOString())
+      const { earlier, current } = splitByRun(training.sessions, selectedMeso?.activated_at ?? null)
+      const ranges = [earlier, current].filter((run) => run.length > 0).map((run) => {
+        const days = run.map((session) => localIsoDate(session.started_at)).sort()
+        const lastWorkoutDay = days[days.length - 1]
+        return {
+          firstDay: days[0],
+          lastDay: run === current && selectedMeso?.is_active && today > lastWorkoutDay ? today : lastWorkoutDay,
+        }
+      })
+      if (!ranges.length) ranges.push({ firstDay: calendarDay(today, -29), lastDay: today })
+      const firstDay = ranges.map((range) => range.firstDay).sort()[0]
+      const lastDay = ranges.map((range) => range.lastDay).sort().pop()!
+      const data = await getDailyHealthData(userId, firstDay, lastDay)
+      const base = selectedMeso?.name ?? (scope ? UNASSIGNED_SLUG : 'daily-health')
       const slug = base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'meso'
-      const date = new Date().toISOString().slice(0, 10)
-      if (trends && selectedMeso) {
-        const { earlier, current } = splitByRun(sessions, selectedMeso.activated_at)
-        const exportRuns = [earlier, current]
-          .filter((run) => run.length > 0)
-          .map((run) => {
-            const workouts = run.map((session) => session.started_at)
-            const days = workouts.map(localIsoDate).sort()
-            return { workouts, firstDay: days[0], lastDay: days[days.length - 1] }
-          })
-          .sort((a, b) => a.firstDay.localeCompare(b.firstDay))
-        if (!exportRuns.length) return
-        const lastDay = exportRuns.map((run) => run.lastDay).sort().pop()!
-        const data = await getHealthTrendsData(userId, exportRuns[0].firstDay, lastDay)
-        await downloadTextFile(`momentum-${slug}-${date}-health-trends.csv`, healthTrendsCsv(exportRuns, data))
-      } else {
-        const csv = mesoRowsToCsv(rows, weightLabel, toWeight, localIsoDate)
-        await downloadTextFile(`momentum-${slug}-${date}.csv`, csv)
-      }
+      await downloadTextFile(`momentum-${slug}-${today}.csv`, dailyHealthCsv(ranges, data, training, weightLabel, toWeight))
     } catch {
       setExportError(true)
     } finally {
       setExporting(false)
     }
   }
-
   if (mesos === null) {
     return <div className="min-h-screen bg-white p-6 dark:bg-[#0f1115] dark:text-white">{t('common.loading')}</div>
   }
@@ -198,11 +191,6 @@ export function HistoryPage() {
   // *active* meso": a user whose mesos are all inactive used to see an empty page and now sees
   // their history.
   const nothingToShow = scope === null
-  // Enabled unless we positively know the scope is empty. Not `!sessions`, which would also
-  // disable it mid-load and flicker on every switch — the export runs its own query and does
-  // not need the list. Left enabled on a failed load too, so a broken list never takes the
-  // export path away with it.
-  const exportDisabled = exporting || (!scopeError && sessions?.length === 0)
   const control = 'rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-[#1b2030] dark:text-white'
 
   return (
@@ -211,7 +199,7 @@ export function HistoryPage() {
         {error ? (
           <p className="text-sm text-red-500">{t('common.error')}</p>
         ) : nothingToShow ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">{t('history.nothingLogged')}</p>
+          <div className="space-y-2"><p className="text-sm text-slate-500 dark:text-slate-400">{t('history.nothingLogged')}</p><button type="button" className={control} onClick={() => void onExport()} disabled={exporting}>{t('history.exportCsv')}</button>{exportError && <p role="alert">{t('common.error')}</p>}</div>
         ) : (
           <>
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -234,20 +222,11 @@ export function HistoryPage() {
                 {exportError && <span className="text-xs text-red-500">{t('common.error')}</span>}
                 <button
                   onClick={() => void onExport()}
-                  disabled={exportDisabled}
+                  disabled={exporting}
                   className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold disabled:opacity-50 dark:bg-[#1b2030]"
                 >
                   {exporting ? t('history.exporting') : t('history.exportCsv')}
                 </button>
-                {selectedMeso && (
-                  <button
-                    onClick={() => void onExport(true)}
-                    disabled={exportDisabled}
-                    className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold disabled:opacity-50 dark:bg-[#1b2030]"
-                  >
-                    Export health trends
-                  </button>
-                )}
               </div>
             </div>
 

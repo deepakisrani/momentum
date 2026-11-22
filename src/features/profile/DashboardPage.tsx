@@ -8,6 +8,7 @@ import { buildEnergySummary } from './energySummary'
 import { getActiveSession } from '../../data/sessionRepo'
 import { InstallBanner } from '../../pwa/InstallBanner'
 import { LogWeightModal } from './LogWeightModal'
+import { DailyHealthCard } from './DailyHealthCard'
 
 export function DashboardPage() {
   const t = useT()
@@ -52,6 +53,7 @@ export function DashboardPage() {
           <h1 className="text-2xl font-bold">{t('home.welcome')}{firstName ? `, ${firstName}` : ''}</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">{t('home.targetCalories')}: {summary.target} {t('dashboard.kcal')}</p>
         </div>
+        <DailyHealthCard key={session.user.id} userId={session.user.id} />
         <div className="space-y-2">
           <Link to="/workout" className={`${card} flex items-center justify-between bg-brand-700 text-white hover:bg-brand-800`}>
             <span>{hasActiveSession ? t('workout.resume') : t('workout.start')}</span>

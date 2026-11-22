@@ -5,6 +5,7 @@ export interface QSegment { segment_index: number; weight: number; reps: number;
 export interface QSet { set_index: number; set_segment: QSegment[] }
 export interface QExercise { order_index: number; exercise: { name: string; muscle_group: string } | null; logged_set: QSet[] }
 export interface QSession {
+  id?: string
   started_at: string
   is_deload: boolean
   meso_day_id: string | null
@@ -13,6 +14,7 @@ export interface QSession {
 }
 
 export interface MesoSetRow {
+  sessionId?: string
   date: string
   dayLabel: string | null
   isDeload: boolean
@@ -40,6 +42,7 @@ export function flattenMesoQuery(sessions: QSession[]): MesoSetRow[] {
         const segs = [...(ls.set_segment ?? [])].sort((a, b) => a.segment_index - b.segment_index)
         for (const seg of segs) {
           rows.push({
+            ...(s.id && { sessionId: s.id }),
             date: s.started_at,
             dayLabel: s.meso_day?.label ?? null,
             isDeload: s.is_deload,
@@ -57,26 +60,24 @@ export function flattenMesoQuery(sessions: QSession[]): MesoSetRow[] {
   return rows
 }
 
-/** Fetch all completed logged sets for one meso in a single nested query. `mesoId: null`
+/** Fetch all completed logged sets for one meso. `mesoId: null`
  * exports the unassigned bucket. Deliberately not windowed by `activated_at` -- an export
  * should contain everything the meso owns, every run of it.
  *
- * Rooted at `workout_session` so the top-level row count is "number of sessions", staying
- * under PostgREST's 1000-row cap; nested sets are JSON and don't count. The unassigned
- * bucket aggregates every orphan across all time, so it is the largest plausible bucket --
- * still ~5 years of 4x/week training away from the cap. */
+ * Page workout sessions so long histories retain all rows. Nested sets don't count toward the cap. */
 export async function getMesoExport(userId: string, mesoId: string | null) {
-  let q = supabase
-    .from('workout_session')
-    .select(
-      'started_at, is_deload, meso_day_id, meso_day ( label ), session_exercise ( order_index, exercise ( name, muscle_group ), logged_set ( set_index, set_segment ( segment_index, weight, reps, rir ) ) )',
-    )
-    .eq('user_id', userId)
-    .eq('status', 'completed')
-    .order('started_at', { ascending: true })
-  q = mesoId === null ? q.is('meso_id', null) : q.eq('meso_id', mesoId)
-  const { data, error } = await q
-  if (error) throw error
-  const sessions = (data ?? []) as unknown as QSession[]
+  const sessions: QSession[] = []
+  const pageSize = 500
+  for (let first = 0; ; first += pageSize) {
+    const query = supabase.from('workout_session').select(
+      'id, started_at, is_deload, meso_day_id, meso_day ( label ), session_exercise ( order_index, exercise ( name, muscle_group ), logged_set ( set_index, set_segment ( segment_index, weight, reps, rir ) ) )',
+    ).eq('user_id', userId).eq('status', 'completed').order('started_at').order('id')
+    const scope = mesoId === null ? query.is('meso_id', null) : query.eq('meso_id', mesoId)
+    const { data, error } = await scope.range(first, first + pageSize - 1)
+    if (error) throw error
+    const page = (data ?? []) as unknown as QSession[]
+    sessions.push(...page)
+    if (page.length < pageSize) break
+  }
   return { rows: flattenMesoQuery(sessions), sessions }
 }
