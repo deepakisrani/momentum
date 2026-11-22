@@ -1,11 +1,11 @@
-export const ANALYTICS_VERSION = '1.0.0'
+export const ANALYTICS_VERSION = '2.0.0'
 const DAY = 86_400_000
 
 export interface AnalyticsDay {
   day: string
   sleepMinutes?: number
   weightKg?: number
-  restingHeartRate?: number
+  averageHeartRate?: number
   steps?: number
 }
 
@@ -84,7 +84,7 @@ export function recoveryMetrics(
         method: `Sum of nightly shortfalls against ${config.sleepTargetMinutes} minutes across observed nights` },
       { id: 'weight.mean_kg', field: 'weightKg', compute: average, method: 'Mean of observed daily weights' },
       { id: 'steps.mean_count', field: 'steps', compute: average, method: 'Mean of observed daily step totals' },
-      { id: 'resting_heart_rate.median_bpm', field: 'restingHeartRate', compute: median, method: 'Median of observed daily resting heart rates' },
+      { id: 'heart_rate.mean_daily_bpm', field: 'averageHeartRate', compute: average, method: 'Mean of observed daily heart-rate averages, with each observed day weighted equally' },
     ] as const
     return descriptors.map((metric) => {
       const values = metric.field === 'sleepMinutes' ? sleep : observations(through, windowDays, metric.field)

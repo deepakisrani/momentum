@@ -77,7 +77,7 @@ export function dailyHealthByDate(data: Awaited<ReturnType<typeof getDailyHealth
       sleepDuration: night?.duration,
       asleep: night?.asleep,
       steps: daily.get('steps:' + day),
-      restingHeartRate: daily.get('resting_heart_rate:' + day),
+      averageHeartRate: daily.get('heart_rate:' + day),
     }
   }
 }

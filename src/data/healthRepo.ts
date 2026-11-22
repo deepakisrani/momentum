@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase'
 
 export type BodyMetric = 'weight_kg' | 'body_fat_pct' | 'lean_mass_kg'
-export type DailyMetric = 'steps' | 'resting_heart_rate'
+export type DailyMetric = 'steps' | 'heart_rate'
 export type HealthType = BodyMetric | 'sleep' | DailyMetric
 export type DailyReading = { day: string; value: number }
 
@@ -49,7 +49,8 @@ export async function applyHealthChanges(
 
 export async function getHealthSyncState(userId: string, installationId?: string) {
   const query = supabase.from('health_import_state')
-    .select('record_type, synced_at').eq('user_id', userId).order('synced_at', { ascending: false })
+    .select('record_type, synced_at').eq('user_id', userId).neq('record_type', 'resting_heart_rate')
+    .order('synced_at', { ascending: false })
   const { data, error } = await (installationId ? query.eq('installation_id', installationId) : query)
   if (error) throw error
   const latest = new Map<HealthType, { record_type: HealthType; synced_at: string }>()
@@ -90,6 +91,7 @@ export async function getDailyHealthData(userId: string, firstDay: string, lastD
         .order('ended_at').order('record_id').range(first, last)),
     readPages<DailyReading & { metric: DailyMetric }>((first, last) =>
       supabase.from('daily_health').select('day, metric, value').eq('user_id', userId)
+        .in('metric', ['steps', 'heart_rate'])
         .gte('day', firstDay).lte('day', lastDay).order('day').order('metric').range(first, last)),
   ])
   return { weights, body, sleep, daily }

@@ -34,7 +34,7 @@ export function DailyHealthCard({ userId }: { userId: string }) {
     [health.asleep == null ? 'Sleep session' : 'Time asleep',
       health.sleepDuration == null ? null : duration(health.asleep ?? health.sleepDuration)],
     ['Steps', health.steps == null ? null : health.steps.toLocaleString()],
-    ['Resting heart rate', health.restingHeartRate == null ? null : `${health.restingHeartRate} bpm`],
+    ['Average heart rate', health.averageHeartRate == null ? null : `${health.averageHeartRate} bpm`],
   ] : []
 
   return (

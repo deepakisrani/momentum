@@ -60,8 +60,8 @@ describe('recovery analytics', () => {
   })
   it('distinguishes zero steps from missing data and shows coverage on both sides of a comparison', () => {
     const output = recoveryMetrics([
-      { day: '2026-11-06', sleepMinutes: 360, steps: 0 },
-      { day: '2026-11-05', sleepMinutes: 480 },
+      { day: '2026-11-06', sleepMinutes: 360, steps: 0, averageHeartRate: 80 },
+      { day: '2026-11-05', sleepMinutes: 480, averageHeartRate: 70 },
       { day: '2026-11-02', sleepMinutes: 460 },
       { day: '2026-11-07', sleepMinutes: 999, steps: 1000 },
     ], '2026-11-06', { windows: [3], sleepTargetMinutes: 480 })
@@ -69,6 +69,6 @@ describe('recovery analytics', () => {
     expect(metric('sleep.mean_minutes')).toMatchObject({ value: 420, baseline: 460, change: -40, sampleSize: 2, baselineSampleSize: 1 })
     expect(metric('sleep.shortfall_minutes')).toMatchObject({ value: 120, change: null })
     expect(metric('steps.mean_count')).toMatchObject({ value: 0, coverage: 1 / 3 })
-    expect(metric('resting_heart_rate.median_bpm')).toMatchObject({ value: null, status: 'insufficient_data' })
+    expect(metric('heart_rate.mean_daily_bpm')).toMatchObject({ value: 75, baseline: null, sampleSize: 2 })
   })
 })

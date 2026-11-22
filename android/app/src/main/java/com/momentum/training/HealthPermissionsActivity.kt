@@ -10,7 +10,7 @@ class HealthPermissionsActivity : Activity() {
         AlertDialog.Builder(this)
             .setTitle("Momentum and Health Connect")
             .setMessage(
-                "Momentum reads weight, body fat, lean body mass, sleep, steps and resting heart rate to show daily health alongside your training. " +
+                "Momentum reads weight, body fat, lean body mass, sleep, steps and heart rate to show daily health alongside your training. " +
                     "When you select Sync now, Momentum copies the records you allow to your signed-in Momentum account. " +
                     "You can revoke access in Health Connect settings. To remove uploaded records, use Reset account in Momentum."
             )

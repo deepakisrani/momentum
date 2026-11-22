@@ -6,12 +6,14 @@ import { downloadTextFile } from '../../lib/download'
 
 const units: Record<string, string> = {
   'sleep.mean_minutes': 'min', 'sleep.consistency_sd_minutes': 'min', 'sleep.shortfall_minutes': 'min',
-  'weight.mean_kg': 'kg', 'steps.mean_count': 'steps', 'resting_heart_rate.median_bpm': 'bpm',
+  'weight.mean_kg': 'kg', 'steps.mean_count': 'steps',
+  'heart_rate.mean_daily_bpm': 'bpm',
 }
 const labels: Record<string, string> = {
   'sleep.mean_minutes': 'Average time asleep', 'sleep.consistency_sd_minutes': 'Sleep duration variability',
   'sleep.shortfall_minutes': 'Observed sleep shortfall', 'weight.mean_kg': 'Average weight',
-  'steps.mean_count': 'Average steps', 'resting_heart_rate.median_bpm': 'Median resting heart rate',
+  'steps.mean_count': 'Average steps',
+  'heart_rate.mean_daily_bpm': 'Average heart rate',
 }
 
 export function TrainingAnalyticsPanel({ userId }: { userId: string }) {

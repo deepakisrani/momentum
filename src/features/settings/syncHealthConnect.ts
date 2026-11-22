@@ -21,7 +21,7 @@ export async function syncHealthConnect(userId: string, installation: string, ty
     const recovered: HealthType[] = []
     for (const type of types) {
       try {
-        if (type === 'steps' || type === 'resting_heart_rate') {
+        if (type === 'steps' || type === 'heart_rate') {
           await applyDailyHealth(userId, installation, type, await momentumAndroid.readDailyHealth({ type }))
           continue
         }

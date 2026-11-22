@@ -44,7 +44,10 @@ export async function getTrainingAnalytics(
   const days = Array.from({ length: historyDays }, (_, index) => {
     const day = calendarDate(from, index)
     const row = healthOn(day)
-    return { day, sleepMinutes: row.asleep ?? undefined, weightKg: row.weight, steps: row.steps, restingHeartRate: row.restingHeartRate }
+    return {
+      day, sleepMinutes: row.asleep ?? undefined, weightKg: row.weight, steps: row.steps,
+      averageHeartRate: row.averageHeartRate,
+    }
   })
   const exerciseIds = new Set(workouts.flatMap((workout) => workout.exercises.map((exercise) => exercise.id)))
   const sessionIds = new Set(workouts.map((workout) => workout.id))

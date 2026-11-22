@@ -10,7 +10,7 @@ import androidx.health.connect.client.records.Record
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.records.StepsRecord
-import androidx.health.connect.client.records.RestingHeartRateRecord
+import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.request.AggregateGroupByPeriodRequest
 import androidx.health.connect.client.request.ChangesTokenRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
@@ -39,11 +39,11 @@ class MomentumAndroidPlugin : Plugin() {
     )
     private val dailyMetrics = mapOf(
         "steps" to StepsRecord.COUNT_TOTAL,
-        "resting_heart_rate" to RestingHeartRateRecord.BPM_AVG,
+        "heart_rate" to HeartRateRecord.BPM_AVG,
     )
     private val permissions = recordTypes.mapValues { HealthPermission.getReadPermission(it.value) } + mapOf(
         "steps" to HealthPermission.getReadPermission(StepsRecord::class),
-        "resting_heart_rate" to HealthPermission.getReadPermission(RestingHeartRateRecord::class),
+        "heart_rate" to HealthPermission.getReadPermission(HeartRateRecord::class),
     )
     private val host get() = activity as MainActivity
 

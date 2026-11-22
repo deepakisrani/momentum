@@ -32,7 +32,7 @@ export function dailyHealthCsv(
   }
   return toCsv([
     'date', 'weight_kg', 'body_fat_pct', 'lean_mass_kg', 'sleep_session_minutes',
-    'time_asleep_minutes', 'steps', 'resting_heart_rate_bpm', 'workouts_completed', 'workouts',
+    'time_asleep_minutes', 'steps', 'average_heart_rate_bpm', 'workouts_completed', 'workouts',
   ], [...days].sort().map((day) => {
     const health = healthOn(day)
     const workouts = (sessionsByDay.get(day) ?? []).map((session) => ({
@@ -52,7 +52,7 @@ export function dailyHealthCsv(
     return [
       day, health.weight ?? '', health.bodyFat ?? '', health.leanMass ?? '',
       health.sleepDuration?.toFixed(2) ?? '', health.asleep?.toFixed(2) ?? '',
-      health.steps ?? '', health.restingHeartRate ?? '', workouts.length,
+      health.steps ?? '', health.averageHeartRate ?? '', workouts.length,
       workouts.length ? JSON.stringify(workouts) : '',
     ]
   }))
