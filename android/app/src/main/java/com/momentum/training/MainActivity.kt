@@ -1,6 +1,7 @@
 package com.momentum.training
 
 import android.os.Bundle
+import android.net.Uri
 import android.content.pm.ApplicationInfo
 import android.webkit.WebSettings
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,12 +24,15 @@ class MainActivity : BridgeActivity() {
     }
 
     private var pendingExport: Pair<PluginCall, String>? = null
-    private val createCsv = registerForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
-        val (call, text) = pendingExport ?: return@registerForActivityResult
+    private val createCsv = registerForActivityResult(ActivityResultContracts.CreateDocument("text/csv"), ::writeExport)
+    private val createJson = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json"), ::writeExport)
+
+    private fun writeExport(uri: Uri?) {
+        val (call, text) = pendingExport ?: return
         if (uri == null) {
             pendingExport = null
             call.resolve(JSObject().put("saved", false))
-            return@registerForActivityResult
+            return
         }
         lifecycleScope.launch {
             try {
@@ -38,7 +42,7 @@ class MainActivity : BridgeActivity() {
                 }
                 call.resolve(JSObject().put("saved", true))
             } catch (error: Exception) {
-                call.reject("Could not save the CSV", error)
+                call.reject("Could not save the export", error)
             } finally {
                 pendingExport = null
             }
@@ -68,14 +72,14 @@ class MainActivity : BridgeActivity() {
         }
     }
 
-    fun saveCsv(call: PluginCall, filename: String, text: String) {
+    fun saveExport(call: PluginCall, filename: String, text: String, mime: String?) {
         if (pendingExport != null) {
-            call.reject("A CSV export is already open")
+            call.reject("An export is already open")
             return
         }
         pendingExport = call to text
         try {
-            createCsv.launch(filename)
+            if (mime == "application/json") createJson.launch(filename) else createCsv.launch(filename)
         } catch (error: Exception) {
             pendingExport = null
             call.reject("Could not open the file picker", error)

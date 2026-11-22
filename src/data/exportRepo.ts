@@ -3,10 +3,12 @@ import { supabase } from '../lib/supabase'
 // Shape of the nested select response (only the fields we request).
 export interface QSegment { segment_index: number; weight: number; reps: number; rir: number | null }
 export interface QSet { set_index: number; set_segment: QSegment[] }
-export interface QExercise { order_index: number; exercise: { name: string; muscle_group: string } | null; logged_set: QSet[] }
+export interface QExercise { exercise_id?: string; order_index: number; exercise: { name: string; muscle_group: string } | null; logged_set: QSet[] }
 export interface QSession {
   id?: string
   started_at: string
+  meso_id?: string | null
+  microcycle_id?: string | null
   is_deload: boolean
   meso_day_id: string | null
   meso_day: { label: string } | null
@@ -66,18 +68,29 @@ export function flattenMesoQuery(sessions: QSession[]): MesoSetRow[] {
  *
  * Page workout sessions so long histories retain all rows. Nested sets don't count toward the cap. */
 export async function getMesoExport(userId: string, mesoId: string | null) {
+  const sessions = await readSessions(userId, { mesoId })
+  return { rows: flattenMesoQuery(sessions), sessions }
+}
+
+export function getAnalyticsSessions(userId: string, from: string, until: string) {
+  return readSessions(userId, { from, until })
+}
+
+async function readSessions(userId: string, scope: { mesoId: string | null } | { from: string; until: string }) {
   const sessions: QSession[] = []
   const pageSize = 500
   for (let first = 0; ; first += pageSize) {
     const query = supabase.from('workout_session').select(
-      'id, started_at, is_deload, meso_day_id, meso_day ( label ), session_exercise ( order_index, exercise ( name, muscle_group ), logged_set ( set_index, set_segment ( segment_index, weight, reps, rir ) ) )',
+      'id, started_at, meso_id, microcycle_id, is_deload, meso_day_id, meso_day ( label ), session_exercise ( exercise_id, order_index, exercise ( name, muscle_group ), logged_set ( set_index, set_segment ( segment_index, weight, reps, rir ) ) )',
     ).eq('user_id', userId).eq('status', 'completed').order('started_at').order('id')
-    const scope = mesoId === null ? query.is('meso_id', null) : query.eq('meso_id', mesoId)
-    const { data, error } = await scope.range(first, first + pageSize - 1)
+    const filtered = 'mesoId' in scope
+      ? scope.mesoId === null ? query.is('meso_id', null) : query.eq('meso_id', scope.mesoId)
+      : query.gte('started_at', scope.from).lt('started_at', scope.until)
+    const { data, error } = await filtered.range(first, first + pageSize - 1)
     if (error) throw error
     const page = (data ?? []) as unknown as QSession[]
     sessions.push(...page)
     if (page.length < pageSize) break
   }
-  return { rows: flattenMesoQuery(sessions), sessions }
+  return sessions
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getDailyHealthData } from '../../data/healthRepo'
-import { dailyHealthByDate } from '../history/dailyHealthCsv'
+import { dailyHealthByDate } from '../../domain/dailyHealth'
 import { localIsoDate } from '../history/historyFormat'
 import { useUnits } from './useUnits'
 

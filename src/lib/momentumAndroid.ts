@@ -14,5 +14,5 @@ export const momentumAndroid = registerPlugin<{
     Promise<{ records: HealthRecord[]; nextPage: string | null }>
   readChanges(options: { token: string }):
     Promise<{ records: HealthRecord[]; deleted: string[]; token: string; more: boolean; expired: boolean }>
-  saveCsv(options: { filename: string; text: string }): Promise<{ saved: boolean }>
+  saveCsv(options: { filename: string; text: string; mime?: string }): Promise<{ saved: boolean }>
 }>('MomentumAndroid')

@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/useAuth'
 import { useT } from '../../i18n/I18nProvider'
 import { listTrainedExercises, type TrainedExercise } from '../../data/progressRepo'
 import { shortDate } from '../history/historyFormat'
+import { TrainingAnalyticsPanel } from './TrainingAnalyticsPanel'
 
 export function ProgressPage() {
   const t = useT()
@@ -31,6 +32,7 @@ export function ProgressPage() {
   return (
     <div className="min-h-screen bg-white p-6 text-slate-900 dark:bg-[#0f1115] dark:text-white">
       <div className="mx-auto max-w-4xl space-y-4">
+        <TrainingAnalyticsPanel key={userId} userId={userId} />
         {error ? (
           <p className="text-sm text-red-500">{t('common.error')}</p>
         ) : items.length === 0 ? (

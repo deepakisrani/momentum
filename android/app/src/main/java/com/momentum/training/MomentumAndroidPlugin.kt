@@ -139,7 +139,7 @@ class MomentumAndroidPlugin : Plugin() {
             call.reject("Filename and CSV content are required")
             return
         }
-        activity.runOnUiThread { host.saveCsv(call, filename, text) }
+        activity.runOnUiThread { host.saveExport(call, filename, text, call.getString("mime")) }
     }
 
     private fun runCall(call: PluginCall, operation: suspend () -> JSObject) {
